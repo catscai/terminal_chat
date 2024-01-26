@@ -1,0 +1,123 @@
+syntax = "proto2";
+
+package Wal;
+
+option go_package = "../src/allpb";
+
+message ErrInfo {
+  optional int32  code = 1;
+  optional string msg = 2;
+}
+
+message RegisterRQ {
+  optional string email = 1;
+  optional string name = 2;
+  optional int32  verifyCode = 3;
+  optional string passwd = 4;
+}
+
+message RegisterRS {
+  optional ErrInfo err = 1;
+  optional int64   own = 2;
+}
+
+message LoginRQ {
+  optional int64  own = 1;
+  optional string passwd = 2;
+}
+
+message LoginRS {
+  optional ErrInfo  err = 1;
+  optional string   name = 2;
+}
+
+message SendToPersonalRQ {
+  optional int64  own = 1;
+  optional int64  peer = 2;
+  optional string content = 3;
+  optional int64  timeStamp = 4;
+}
+
+message SendToPersonalRS {
+  optional ErrInfo err = 1;
+}
+
+message CreateTempGroupRQ {
+  optional int64  own = 1;
+  optional string name = 2;
+  optional int64  timeStamp = 3;
+}
+
+message CreateTempGroupRS {
+  optional ErrInfo  err = 1;
+  optional int64    group = 2;
+}
+
+message SendToTempGroupRQ {
+  optional int64  own = 1;
+  optional int64  group = 2;
+  optional string content = 3;
+  optional int64  timeStamp = 4;
+}
+
+message SendToTempGroupRS {
+  optional ErrInfo err = 1;
+}
+
+message SubscribePersonRQ {
+  optional int64  own = 1;
+  optional int64  peer = 2;
+  optional int64  timeStamp = 3;
+  optional int32  op = 4; // 0-订阅 1-取消
+}
+
+message SubscribePersonRS {
+  optional ErrInfo err = 1;
+}
+
+message SubscribeTempGroupRQ {
+  optional int64  own = 1;
+  optional int64  group = 2;
+  optional int64  timeStamp = 3;
+  optional int32  op = 4; // 0-订阅 1-取消
+}
+
+message SubscribeTempGroupRS {
+  optional ErrInfo err = 1;
+}
+
+// server -> client
+
+message PublishPersonalMsgRQ {
+  optional int64  peer = 1;
+  optional string name = 2;
+  optional string content = 3;
+  optional int64  timeStamp = 4;
+}
+
+message PublishPersonalMsgRS {
+
+}
+
+message PublishGroupMsgRQ {
+  optional int64  group = 1;
+  optional string name = 2;
+  optional string content = 3;
+  optional int64  timeStamp = 4;
+}
+
+message PublishGroupMsgRS {
+
+}
+
+message CancelSubscribeAllRQ {
+  optional int64  own = 1;
+  optional int64  timeStamp = 2;
+}
+
+message CancelSubscribeAllRS {
+  optional ErrInfo err = 1;
+}
+
+
+
