@@ -45,12 +45,27 @@ message SendToPersonalRS {
 message CreateTempGroupRQ {
   optional int64  own = 1;
   optional string name = 2;
-  optional int64  timeStamp = 3;
+  optional int64  code = 3;
+  optional int64  timeStamp = 4;
 }
 
 message CreateTempGroupRS {
   optional ErrInfo  err = 1;
   optional int64    group = 2;
+  optional int64    code = 3;
+}
+
+// 加入group就是订阅,退出就是取消
+message JoinGroupRQ {
+  optional int64  own = 1;
+  optional int64  group = 2;
+  optional int64  code = 3;
+  optional int64  timeStamp = 4;
+  optional int32  op = 5; // 0-订阅 1-取消
+}
+
+message JoinGroupRS {
+  optional ErrInfo  err = 1;
 }
 
 message SendToTempGroupRQ {
@@ -66,24 +81,26 @@ message SendToTempGroupRS {
 
 message SubscribePersonRQ {
   optional int64  own = 1;
-  optional int64  peer = 2;
+  repeated int64  peers = 2;
   optional int64  timeStamp = 3;
   optional int32  op = 4; // 0-订阅 1-取消
 }
 
 message SubscribePersonRS {
   optional ErrInfo err = 1;
+  repeated int64  peers = 2;
 }
 
 message SubscribeTempGroupRQ {
   optional int64  own = 1;
-  optional int64  group = 2;
+  repeated int64  groups = 2;
   optional int64  timeStamp = 3;
   optional int32  op = 4; // 0-订阅 1-取消
 }
 
 message SubscribeTempGroupRS {
   optional ErrInfo err = 1;
+  repeated int64  groups = 2;
 }
 
 // server -> client
@@ -120,4 +137,19 @@ message CancelSubscribeAllRS {
 }
 
 
+
+// 保存在leveldb
+
+message UserInfo {
+  optional int64  own = 1;
+  optional string email = 2;
+  optional string name = 3;
+  optional string passwd = 4;
+  optional int64  registerTime = 5;
+}
+
+message FriendInfo {
+  optional int64 own = 1;
+  repeated int64 peers = 2;
+}
 

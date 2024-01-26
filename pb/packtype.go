@@ -1,6 +1,6 @@
 package pb
 
-type PackType uint16
+type PackType uint32
 
 // client -> server
 const (
@@ -16,6 +16,12 @@ const (
 	PackSubscribePersonalMsgRS
 	PackSubscribeGroupMsgRQ
 	PackSubscribeGroupMsgRS
+	PackCancelSubscribeAllRQ
+	PackCancelSubscribeAllRS
+	PackCreateGroupRQ
+	PackCreateGroupRS
+	PackJoinGroupRQ
+	PackJoinGroupRS
 )
 
 // server -> client
@@ -26,8 +32,13 @@ const (
 	PackPublishGroupMsgRS
 )
 
-type ErrCodeType int32
-
 const (
-	CodeRegisterError ErrCodeType = iota + 10000
+	CodeOK int32 = iota + 10000
+	CodeRegisterError
+	CodeLoginError
+	CodeSendError
+	CodeSubscribeError
+	CodeJoinError
+	CodeCreateGroupError
+	CodeCancelSubscribeError
 )

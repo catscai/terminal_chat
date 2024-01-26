@@ -436,7 +436,8 @@ type CreateTempGroupRQ struct {
 
 	Own       *int64  `protobuf:"varint,1,opt,name=own" json:"own,omitempty"`
 	Name      *string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
-	TimeStamp *int64  `protobuf:"varint,3,opt,name=timeStamp" json:"timeStamp,omitempty"`
+	Code      *int64  `protobuf:"varint,3,opt,name=code" json:"code,omitempty"`
+	TimeStamp *int64  `protobuf:"varint,4,opt,name=timeStamp" json:"timeStamp,omitempty"`
 }
 
 func (x *CreateTempGroupRQ) Reset() {
@@ -485,6 +486,13 @@ func (x *CreateTempGroupRQ) GetName() string {
 	return ""
 }
 
+func (x *CreateTempGroupRQ) GetCode() int64 {
+	if x != nil && x.Code != nil {
+		return *x.Code
+	}
+	return 0
+}
+
 func (x *CreateTempGroupRQ) GetTimeStamp() int64 {
 	if x != nil && x.TimeStamp != nil {
 		return *x.TimeStamp
@@ -499,6 +507,7 @@ type CreateTempGroupRS struct {
 
 	Err   *ErrInfo `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
 	Group *int64   `protobuf:"varint,2,opt,name=group" json:"group,omitempty"`
+	Code  *int64   `protobuf:"varint,3,opt,name=code" json:"code,omitempty"`
 }
 
 func (x *CreateTempGroupRS) Reset() {
@@ -547,6 +556,140 @@ func (x *CreateTempGroupRS) GetGroup() int64 {
 	return 0
 }
 
+func (x *CreateTempGroupRS) GetCode() int64 {
+	if x != nil && x.Code != nil {
+		return *x.Code
+	}
+	return 0
+}
+
+// 加入group就是订阅,退出就是取消
+type JoinGroupRQ struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Own       *int64 `protobuf:"varint,1,opt,name=own" json:"own,omitempty"`
+	Group     *int64 `protobuf:"varint,2,opt,name=group" json:"group,omitempty"`
+	Code      *int64 `protobuf:"varint,3,opt,name=code" json:"code,omitempty"`
+	TimeStamp *int64 `protobuf:"varint,4,opt,name=timeStamp" json:"timeStamp,omitempty"`
+	Op        *int32 `protobuf:"varint,5,opt,name=op" json:"op,omitempty"` // 0-订阅 1-取消
+}
+
+func (x *JoinGroupRQ) Reset() {
+	*x = JoinGroupRQ{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pb_protoc_all_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *JoinGroupRQ) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinGroupRQ) ProtoMessage() {}
+
+func (x *JoinGroupRQ) ProtoReflect() protoreflect.Message {
+	mi := &file_pb_protoc_all_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinGroupRQ.ProtoReflect.Descriptor instead.
+func (*JoinGroupRQ) Descriptor() ([]byte, []int) {
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *JoinGroupRQ) GetOwn() int64 {
+	if x != nil && x.Own != nil {
+		return *x.Own
+	}
+	return 0
+}
+
+func (x *JoinGroupRQ) GetGroup() int64 {
+	if x != nil && x.Group != nil {
+		return *x.Group
+	}
+	return 0
+}
+
+func (x *JoinGroupRQ) GetCode() int64 {
+	if x != nil && x.Code != nil {
+		return *x.Code
+	}
+	return 0
+}
+
+func (x *JoinGroupRQ) GetTimeStamp() int64 {
+	if x != nil && x.TimeStamp != nil {
+		return *x.TimeStamp
+	}
+	return 0
+}
+
+func (x *JoinGroupRQ) GetOp() int32 {
+	if x != nil && x.Op != nil {
+		return *x.Op
+	}
+	return 0
+}
+
+type JoinGroupRS struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Err *ErrInfo `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
+}
+
+func (x *JoinGroupRS) Reset() {
+	*x = JoinGroupRS{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pb_protoc_all_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *JoinGroupRS) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinGroupRS) ProtoMessage() {}
+
+func (x *JoinGroupRS) ProtoReflect() protoreflect.Message {
+	mi := &file_pb_protoc_all_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinGroupRS.ProtoReflect.Descriptor instead.
+func (*JoinGroupRS) Descriptor() ([]byte, []int) {
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *JoinGroupRS) GetErr() *ErrInfo {
+	if x != nil {
+		return x.Err
+	}
+	return nil
+}
+
 type SendToTempGroupRQ struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -561,7 +704,7 @@ type SendToTempGroupRQ struct {
 func (x *SendToTempGroupRQ) Reset() {
 	*x = SendToTempGroupRQ{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[9]
+		mi := &file_pb_protoc_all_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -574,7 +717,7 @@ func (x *SendToTempGroupRQ) String() string {
 func (*SendToTempGroupRQ) ProtoMessage() {}
 
 func (x *SendToTempGroupRQ) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[9]
+	mi := &file_pb_protoc_all_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -587,7 +730,7 @@ func (x *SendToTempGroupRQ) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendToTempGroupRQ.ProtoReflect.Descriptor instead.
 func (*SendToTempGroupRQ) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{9}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SendToTempGroupRQ) GetOwn() int64 {
@@ -629,7 +772,7 @@ type SendToTempGroupRS struct {
 func (x *SendToTempGroupRS) Reset() {
 	*x = SendToTempGroupRS{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[10]
+		mi := &file_pb_protoc_all_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -642,7 +785,7 @@ func (x *SendToTempGroupRS) String() string {
 func (*SendToTempGroupRS) ProtoMessage() {}
 
 func (x *SendToTempGroupRS) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[10]
+	mi := &file_pb_protoc_all_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -655,7 +798,7 @@ func (x *SendToTempGroupRS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendToTempGroupRS.ProtoReflect.Descriptor instead.
 func (*SendToTempGroupRS) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{10}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SendToTempGroupRS) GetErr() *ErrInfo {
@@ -670,16 +813,16 @@ type SubscribePersonRQ struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Own       *int64 `protobuf:"varint,1,opt,name=own" json:"own,omitempty"`
-	Peer      *int64 `protobuf:"varint,2,opt,name=peer" json:"peer,omitempty"`
-	TimeStamp *int64 `protobuf:"varint,3,opt,name=timeStamp" json:"timeStamp,omitempty"`
-	Op        *int32 `protobuf:"varint,4,opt,name=op" json:"op,omitempty"` // 0-订阅 1-取消
+	Own       *int64  `protobuf:"varint,1,opt,name=own" json:"own,omitempty"`
+	Peers     []int64 `protobuf:"varint,2,rep,name=peers" json:"peers,omitempty"`
+	TimeStamp *int64  `protobuf:"varint,3,opt,name=timeStamp" json:"timeStamp,omitempty"`
+	Op        *int32  `protobuf:"varint,4,opt,name=op" json:"op,omitempty"` // 0-订阅 1-取消
 }
 
 func (x *SubscribePersonRQ) Reset() {
 	*x = SubscribePersonRQ{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[11]
+		mi := &file_pb_protoc_all_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -692,7 +835,7 @@ func (x *SubscribePersonRQ) String() string {
 func (*SubscribePersonRQ) ProtoMessage() {}
 
 func (x *SubscribePersonRQ) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[11]
+	mi := &file_pb_protoc_all_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -705,7 +848,7 @@ func (x *SubscribePersonRQ) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribePersonRQ.ProtoReflect.Descriptor instead.
 func (*SubscribePersonRQ) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{11}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SubscribePersonRQ) GetOwn() int64 {
@@ -715,11 +858,11 @@ func (x *SubscribePersonRQ) GetOwn() int64 {
 	return 0
 }
 
-func (x *SubscribePersonRQ) GetPeer() int64 {
-	if x != nil && x.Peer != nil {
-		return *x.Peer
+func (x *SubscribePersonRQ) GetPeers() []int64 {
+	if x != nil {
+		return x.Peers
 	}
-	return 0
+	return nil
 }
 
 func (x *SubscribePersonRQ) GetTimeStamp() int64 {
@@ -741,13 +884,14 @@ type SubscribePersonRS struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Err *ErrInfo `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
+	Err   *ErrInfo `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
+	Peers []int64  `protobuf:"varint,2,rep,name=peers" json:"peers,omitempty"`
 }
 
 func (x *SubscribePersonRS) Reset() {
 	*x = SubscribePersonRS{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[12]
+		mi := &file_pb_protoc_all_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -760,7 +904,7 @@ func (x *SubscribePersonRS) String() string {
 func (*SubscribePersonRS) ProtoMessage() {}
 
 func (x *SubscribePersonRS) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[12]
+	mi := &file_pb_protoc_all_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -773,7 +917,7 @@ func (x *SubscribePersonRS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribePersonRS.ProtoReflect.Descriptor instead.
 func (*SubscribePersonRS) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{12}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SubscribePersonRS) GetErr() *ErrInfo {
@@ -783,21 +927,28 @@ func (x *SubscribePersonRS) GetErr() *ErrInfo {
 	return nil
 }
 
+func (x *SubscribePersonRS) GetPeers() []int64 {
+	if x != nil {
+		return x.Peers
+	}
+	return nil
+}
+
 type SubscribeTempGroupRQ struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Own       *int64 `protobuf:"varint,1,opt,name=own" json:"own,omitempty"`
-	Group     *int64 `protobuf:"varint,2,opt,name=group" json:"group,omitempty"`
-	TimeStamp *int64 `protobuf:"varint,3,opt,name=timeStamp" json:"timeStamp,omitempty"`
-	Op        *int32 `protobuf:"varint,4,opt,name=op" json:"op,omitempty"` // 0-订阅 1-取消
+	Own       *int64  `protobuf:"varint,1,opt,name=own" json:"own,omitempty"`
+	Groups    []int64 `protobuf:"varint,2,rep,name=groups" json:"groups,omitempty"`
+	TimeStamp *int64  `protobuf:"varint,3,opt,name=timeStamp" json:"timeStamp,omitempty"`
+	Op        *int32  `protobuf:"varint,4,opt,name=op" json:"op,omitempty"` // 0-订阅 1-取消
 }
 
 func (x *SubscribeTempGroupRQ) Reset() {
 	*x = SubscribeTempGroupRQ{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[13]
+		mi := &file_pb_protoc_all_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -810,7 +961,7 @@ func (x *SubscribeTempGroupRQ) String() string {
 func (*SubscribeTempGroupRQ) ProtoMessage() {}
 
 func (x *SubscribeTempGroupRQ) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[13]
+	mi := &file_pb_protoc_all_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -823,7 +974,7 @@ func (x *SubscribeTempGroupRQ) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeTempGroupRQ.ProtoReflect.Descriptor instead.
 func (*SubscribeTempGroupRQ) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{13}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SubscribeTempGroupRQ) GetOwn() int64 {
@@ -833,11 +984,11 @@ func (x *SubscribeTempGroupRQ) GetOwn() int64 {
 	return 0
 }
 
-func (x *SubscribeTempGroupRQ) GetGroup() int64 {
-	if x != nil && x.Group != nil {
-		return *x.Group
+func (x *SubscribeTempGroupRQ) GetGroups() []int64 {
+	if x != nil {
+		return x.Groups
 	}
-	return 0
+	return nil
 }
 
 func (x *SubscribeTempGroupRQ) GetTimeStamp() int64 {
@@ -859,13 +1010,14 @@ type SubscribeTempGroupRS struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Err *ErrInfo `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
+	Err    *ErrInfo `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
+	Groups []int64  `protobuf:"varint,2,rep,name=groups" json:"groups,omitempty"`
 }
 
 func (x *SubscribeTempGroupRS) Reset() {
 	*x = SubscribeTempGroupRS{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[14]
+		mi := &file_pb_protoc_all_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -878,7 +1030,7 @@ func (x *SubscribeTempGroupRS) String() string {
 func (*SubscribeTempGroupRS) ProtoMessage() {}
 
 func (x *SubscribeTempGroupRS) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[14]
+	mi := &file_pb_protoc_all_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -891,12 +1043,19 @@ func (x *SubscribeTempGroupRS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeTempGroupRS.ProtoReflect.Descriptor instead.
 func (*SubscribeTempGroupRS) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{14}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SubscribeTempGroupRS) GetErr() *ErrInfo {
 	if x != nil {
 		return x.Err
+	}
+	return nil
+}
+
+func (x *SubscribeTempGroupRS) GetGroups() []int64 {
+	if x != nil {
+		return x.Groups
 	}
 	return nil
 }
@@ -915,7 +1074,7 @@ type PublishPersonalMsgRQ struct {
 func (x *PublishPersonalMsgRQ) Reset() {
 	*x = PublishPersonalMsgRQ{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[15]
+		mi := &file_pb_protoc_all_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -928,7 +1087,7 @@ func (x *PublishPersonalMsgRQ) String() string {
 func (*PublishPersonalMsgRQ) ProtoMessage() {}
 
 func (x *PublishPersonalMsgRQ) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[15]
+	mi := &file_pb_protoc_all_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -941,7 +1100,7 @@ func (x *PublishPersonalMsgRQ) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PublishPersonalMsgRQ.ProtoReflect.Descriptor instead.
 func (*PublishPersonalMsgRQ) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{15}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *PublishPersonalMsgRQ) GetPeer() int64 {
@@ -981,7 +1140,7 @@ type PublishPersonalMsgRS struct {
 func (x *PublishPersonalMsgRS) Reset() {
 	*x = PublishPersonalMsgRS{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[16]
+		mi := &file_pb_protoc_all_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -994,7 +1153,7 @@ func (x *PublishPersonalMsgRS) String() string {
 func (*PublishPersonalMsgRS) ProtoMessage() {}
 
 func (x *PublishPersonalMsgRS) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[16]
+	mi := &file_pb_protoc_all_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1007,7 +1166,7 @@ func (x *PublishPersonalMsgRS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PublishPersonalMsgRS.ProtoReflect.Descriptor instead.
 func (*PublishPersonalMsgRS) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{16}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{18}
 }
 
 type PublishGroupMsgRQ struct {
@@ -1024,7 +1183,7 @@ type PublishGroupMsgRQ struct {
 func (x *PublishGroupMsgRQ) Reset() {
 	*x = PublishGroupMsgRQ{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[17]
+		mi := &file_pb_protoc_all_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1037,7 +1196,7 @@ func (x *PublishGroupMsgRQ) String() string {
 func (*PublishGroupMsgRQ) ProtoMessage() {}
 
 func (x *PublishGroupMsgRQ) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[17]
+	mi := &file_pb_protoc_all_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1050,7 +1209,7 @@ func (x *PublishGroupMsgRQ) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PublishGroupMsgRQ.ProtoReflect.Descriptor instead.
 func (*PublishGroupMsgRQ) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{17}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *PublishGroupMsgRQ) GetGroup() int64 {
@@ -1090,7 +1249,7 @@ type PublishGroupMsgRS struct {
 func (x *PublishGroupMsgRS) Reset() {
 	*x = PublishGroupMsgRS{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[18]
+		mi := &file_pb_protoc_all_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1103,7 +1262,7 @@ func (x *PublishGroupMsgRS) String() string {
 func (*PublishGroupMsgRS) ProtoMessage() {}
 
 func (x *PublishGroupMsgRS) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[18]
+	mi := &file_pb_protoc_all_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1116,7 +1275,7 @@ func (x *PublishGroupMsgRS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PublishGroupMsgRS.ProtoReflect.Descriptor instead.
 func (*PublishGroupMsgRS) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{18}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{20}
 }
 
 type CancelSubscribeAllRQ struct {
@@ -1131,7 +1290,7 @@ type CancelSubscribeAllRQ struct {
 func (x *CancelSubscribeAllRQ) Reset() {
 	*x = CancelSubscribeAllRQ{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[19]
+		mi := &file_pb_protoc_all_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1144,7 +1303,7 @@ func (x *CancelSubscribeAllRQ) String() string {
 func (*CancelSubscribeAllRQ) ProtoMessage() {}
 
 func (x *CancelSubscribeAllRQ) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[19]
+	mi := &file_pb_protoc_all_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1157,7 +1316,7 @@ func (x *CancelSubscribeAllRQ) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelSubscribeAllRQ.ProtoReflect.Descriptor instead.
 func (*CancelSubscribeAllRQ) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{19}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *CancelSubscribeAllRQ) GetOwn() int64 {
@@ -1185,7 +1344,7 @@ type CancelSubscribeAllRS struct {
 func (x *CancelSubscribeAllRS) Reset() {
 	*x = CancelSubscribeAllRS{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pb_protoc_all_proto_msgTypes[20]
+		mi := &file_pb_protoc_all_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1198,7 +1357,7 @@ func (x *CancelSubscribeAllRS) String() string {
 func (*CancelSubscribeAllRS) ProtoMessage() {}
 
 func (x *CancelSubscribeAllRS) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_protoc_all_proto_msgTypes[20]
+	mi := &file_pb_protoc_all_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1211,12 +1370,146 @@ func (x *CancelSubscribeAllRS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelSubscribeAllRS.ProtoReflect.Descriptor instead.
 func (*CancelSubscribeAllRS) Descriptor() ([]byte, []int) {
-	return file_pb_protoc_all_proto_rawDescGZIP(), []int{20}
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CancelSubscribeAllRS) GetErr() *ErrInfo {
 	if x != nil {
 		return x.Err
+	}
+	return nil
+}
+
+type UserInfo struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Own          *int64  `protobuf:"varint,1,opt,name=own" json:"own,omitempty"`
+	Email        *string `protobuf:"bytes,2,opt,name=email" json:"email,omitempty"`
+	Name         *string `protobuf:"bytes,3,opt,name=name" json:"name,omitempty"`
+	Passwd       *string `protobuf:"bytes,4,opt,name=passwd" json:"passwd,omitempty"`
+	RegisterTime *int64  `protobuf:"varint,5,opt,name=registerTime" json:"registerTime,omitempty"`
+}
+
+func (x *UserInfo) Reset() {
+	*x = UserInfo{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pb_protoc_all_proto_msgTypes[23]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UserInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserInfo) ProtoMessage() {}
+
+func (x *UserInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_pb_protoc_all_proto_msgTypes[23]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserInfo.ProtoReflect.Descriptor instead.
+func (*UserInfo) Descriptor() ([]byte, []int) {
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *UserInfo) GetOwn() int64 {
+	if x != nil && x.Own != nil {
+		return *x.Own
+	}
+	return 0
+}
+
+func (x *UserInfo) GetEmail() string {
+	if x != nil && x.Email != nil {
+		return *x.Email
+	}
+	return ""
+}
+
+func (x *UserInfo) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *UserInfo) GetPasswd() string {
+	if x != nil && x.Passwd != nil {
+		return *x.Passwd
+	}
+	return ""
+}
+
+func (x *UserInfo) GetRegisterTime() int64 {
+	if x != nil && x.RegisterTime != nil {
+		return *x.RegisterTime
+	}
+	return 0
+}
+
+type FriendInfo struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Own   *int64  `protobuf:"varint,1,opt,name=own" json:"own,omitempty"`
+	Peers []int64 `protobuf:"varint,2,rep,name=peers" json:"peers,omitempty"`
+}
+
+func (x *FriendInfo) Reset() {
+	*x = FriendInfo{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pb_protoc_all_proto_msgTypes[24]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FriendInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FriendInfo) ProtoMessage() {}
+
+func (x *FriendInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_pb_protoc_all_proto_msgTypes[24]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FriendInfo.ProtoReflect.Descriptor instead.
+func (*FriendInfo) Descriptor() ([]byte, []int) {
+	return file_pb_protoc_all_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *FriendInfo) GetOwn() int64 {
+	if x != nil && x.Own != nil {
+		return *x.Own
+	}
+	return 0
+}
+
+func (x *FriendInfo) GetPeers() []int64 {
+	if x != nil {
+		return x.Peers
 	}
 	return nil
 }
@@ -1257,17 +1550,30 @@ var file_pb_protoc_all_proto_rawDesc = []byte{
 	0x70, 0x22, 0x32, 0x0a, 0x10, 0x53, 0x65, 0x6e, 0x64, 0x54, 0x6f, 0x50, 0x65, 0x72, 0x73, 0x6f,
 	0x6e, 0x61, 0x6c, 0x52, 0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72, 0x49, 0x6e, 0x66, 0x6f,
-	0x52, 0x03, 0x65, 0x72, 0x72, 0x22, 0x57, 0x0a, 0x11, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54,
+	0x52, 0x03, 0x65, 0x72, 0x72, 0x22, 0x6b, 0x0a, 0x11, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54,
 	0x65, 0x6d, 0x70, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x51, 0x12, 0x10, 0x0a, 0x03, 0x6f, 0x77,
 	0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6f, 0x77, 0x6e, 0x12, 0x12, 0x0a, 0x04,
 	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
-	0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x22, 0x49,
-	0x0a, 0x11, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54, 0x65, 0x6d, 0x70, 0x47, 0x72, 0x6f, 0x75,
-	0x70, 0x52, 0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x0c, 0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03,
-	0x65, 0x72, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x03, 0x52, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x22, 0x73, 0x0a, 0x11, 0x53, 0x65, 0x6e,
+	0x12, 0x12, 0x0a, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04,
+	0x63, 0x6f, 0x64, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d,
+	0x70, 0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61,
+	0x6d, 0x70, 0x22, 0x5d, 0x0a, 0x11, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54, 0x65, 0x6d, 0x70,
+	0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72, 0x49, 0x6e,
+	0x66, 0x6f, 0x52, 0x03, 0x65, 0x72, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x12, 0x0a,
+	0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x63, 0x6f, 0x64,
+	0x65, 0x22, 0x77, 0x0a, 0x0b, 0x4a, 0x6f, 0x69, 0x6e, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x51,
+	0x12, 0x10, 0x0a, 0x03, 0x6f, 0x77, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6f,
+	0x77, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x03, 0x52, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x12, 0x0a, 0x04, 0x63, 0x6f, 0x64, 0x65,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x1c, 0x0a, 0x09,
+	0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x52,
+	0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x12, 0x0e, 0x0a, 0x02, 0x6f, 0x70,
+	0x18, 0x05, 0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x6f, 0x70, 0x22, 0x2d, 0x0a, 0x0b, 0x4a, 0x6f,
+	0x69, 0x6e, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72,
+	0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03, 0x65, 0x72, 0x72, 0x22, 0x73, 0x0a, 0x11, 0x53, 0x65, 0x6e,
 	0x64, 0x54, 0x6f, 0x54, 0x65, 0x6d, 0x70, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x51, 0x12, 0x10,
 	0x0a, 0x03, 0x6f, 0x77, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6f, 0x77, 0x6e,
 	0x12, 0x14, 0x0a, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52,
@@ -1278,54 +1584,68 @@ var file_pb_protoc_all_proto_rawDesc = []byte{
 	0x0a, 0x11, 0x53, 0x65, 0x6e, 0x64, 0x54, 0x6f, 0x54, 0x65, 0x6d, 0x70, 0x47, 0x72, 0x6f, 0x75,
 	0x70, 0x52, 0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x0c, 0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03,
-	0x65, 0x72, 0x72, 0x22, 0x67, 0x0a, 0x11, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65,
+	0x65, 0x72, 0x72, 0x22, 0x69, 0x0a, 0x11, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65,
 	0x50, 0x65, 0x72, 0x73, 0x6f, 0x6e, 0x52, 0x51, 0x12, 0x10, 0x0a, 0x03, 0x6f, 0x77, 0x6e, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6f, 0x77, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x65,
-	0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x70, 0x65, 0x65, 0x72, 0x12, 0x1c,
-	0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x03, 0x20, 0x01, 0x28,
-	0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x12, 0x0e, 0x0a, 0x02,
-	0x6f, 0x70, 0x18, 0x04, 0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x6f, 0x70, 0x22, 0x33, 0x0a, 0x11,
-	0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x50, 0x65, 0x72, 0x73, 0x6f, 0x6e, 0x52,
+	0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6f, 0x77, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x70, 0x65,
+	0x65, 0x72, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x03, 0x52, 0x05, 0x70, 0x65, 0x65, 0x72, 0x73,
+	0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x12, 0x0e,
+	0x0a, 0x02, 0x6f, 0x70, 0x18, 0x04, 0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x6f, 0x70, 0x22, 0x49,
+	0x0a, 0x11, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x50, 0x65, 0x72, 0x73, 0x6f,
+	0x6e, 0x52, 0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x0c, 0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03,
+	0x65, 0x72, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x70, 0x65, 0x65, 0x72, 0x73, 0x18, 0x02, 0x20, 0x03,
+	0x28, 0x03, 0x52, 0x05, 0x70, 0x65, 0x65, 0x72, 0x73, 0x22, 0x6e, 0x0a, 0x14, 0x53, 0x75, 0x62,
+	0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x54, 0x65, 0x6d, 0x70, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52,
+	0x51, 0x12, 0x10, 0x0a, 0x03, 0x6f, 0x77, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03,
+	0x6f, 0x77, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x73, 0x18, 0x02, 0x20,
+	0x03, 0x28, 0x03, 0x52, 0x06, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x73, 0x12, 0x1c, 0x0a, 0x09, 0x74,
+	0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09,
+	0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x12, 0x0e, 0x0a, 0x02, 0x6f, 0x70, 0x18,
+	0x04, 0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x6f, 0x70, 0x22, 0x4e, 0x0a, 0x14, 0x53, 0x75, 0x62,
+	0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x54, 0x65, 0x6d, 0x70, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52,
 	0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0c,
 	0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03, 0x65, 0x72,
-	0x72, 0x22, 0x6c, 0x0a, 0x14, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x54, 0x65,
-	0x6d, 0x70, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x51, 0x12, 0x10, 0x0a, 0x03, 0x6f, 0x77, 0x6e,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6f, 0x77, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x67,
-	0x72, 0x6f, 0x75, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x67, 0x72, 0x6f, 0x75,
-	0x70, 0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x12,
-	0x0e, 0x0a, 0x02, 0x6f, 0x70, 0x18, 0x04, 0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x6f, 0x70, 0x22,
-	0x36, 0x0a, 0x14, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x54, 0x65, 0x6d, 0x70,
-	0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72, 0x49, 0x6e,
-	0x66, 0x6f, 0x52, 0x03, 0x65, 0x72, 0x72, 0x22, 0x76, 0x0a, 0x14, 0x50, 0x75, 0x62, 0x6c, 0x69,
-	0x73, 0x68, 0x50, 0x65, 0x72, 0x73, 0x6f, 0x6e, 0x61, 0x6c, 0x4d, 0x73, 0x67, 0x52, 0x51, 0x12,
-	0x12, 0x0a, 0x04, 0x70, 0x65, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x70,
-	0x65, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65,
-	0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e,
-	0x74, 0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x04,
-	0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x22,
-	0x16, 0x0a, 0x14, 0x50, 0x75, 0x62, 0x6c, 0x69, 0x73, 0x68, 0x50, 0x65, 0x72, 0x73, 0x6f, 0x6e,
-	0x61, 0x6c, 0x4d, 0x73, 0x67, 0x52, 0x53, 0x22, 0x75, 0x0a, 0x11, 0x50, 0x75, 0x62, 0x6c, 0x69,
-	0x73, 0x68, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x4d, 0x73, 0x67, 0x52, 0x51, 0x12, 0x14, 0x0a, 0x05,
-	0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x67, 0x72, 0x6f,
-	0x75, 0x70, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e,
-	0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74,
-	0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x04, 0x20,
-	0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x22, 0x13,
-	0x0a, 0x11, 0x50, 0x75, 0x62, 0x6c, 0x69, 0x73, 0x68, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x4d, 0x73,
-	0x67, 0x52, 0x53, 0x22, 0x46, 0x0a, 0x14, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x53, 0x75, 0x62,
-	0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x41, 0x6c, 0x6c, 0x52, 0x51, 0x12, 0x10, 0x0a, 0x03, 0x6f,
-	0x77, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6f, 0x77, 0x6e, 0x12, 0x1c, 0x0a,
-	0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03,
-	0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x22, 0x36, 0x0a, 0x14, 0x43,
-	0x61, 0x6e, 0x63, 0x65, 0x6c, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x41, 0x6c,
-	0x6c, 0x52, 0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x0c, 0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03,
-	0x65, 0x72, 0x72, 0x42, 0x0e, 0x5a, 0x0c, 0x2e, 0x2e, 0x2f, 0x73, 0x72, 0x63, 0x2f, 0x61, 0x6c,
-	0x6c, 0x70, 0x62,
+	0x72, 0x12, 0x16, 0x0a, 0x06, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28,
+	0x03, 0x52, 0x06, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x73, 0x22, 0x76, 0x0a, 0x14, 0x50, 0x75, 0x62,
+	0x6c, 0x69, 0x73, 0x68, 0x50, 0x65, 0x72, 0x73, 0x6f, 0x6e, 0x61, 0x6c, 0x4d, 0x73, 0x67, 0x52,
+	0x51, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x65, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52,
+	0x04, 0x70, 0x65, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e,
+	0x74, 0x65, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74,
+	0x65, 0x6e, 0x74, 0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d,
+	0x70, 0x22, 0x16, 0x0a, 0x14, 0x50, 0x75, 0x62, 0x6c, 0x69, 0x73, 0x68, 0x50, 0x65, 0x72, 0x73,
+	0x6f, 0x6e, 0x61, 0x6c, 0x4d, 0x73, 0x67, 0x52, 0x53, 0x22, 0x75, 0x0a, 0x11, 0x50, 0x75, 0x62,
+	0x6c, 0x69, 0x73, 0x68, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x4d, 0x73, 0x67, 0x52, 0x51, 0x12, 0x14,
+	0x0a, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x67,
+	0x72, 0x6f, 0x75, 0x70, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74,
+	0x65, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65,
+	0x6e, 0x74, 0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18,
+	0x04, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70,
+	0x22, 0x13, 0x0a, 0x11, 0x50, 0x75, 0x62, 0x6c, 0x69, 0x73, 0x68, 0x47, 0x72, 0x6f, 0x75, 0x70,
+	0x4d, 0x73, 0x67, 0x52, 0x53, 0x22, 0x46, 0x0a, 0x14, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x53,
+	0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x41, 0x6c, 0x6c, 0x52, 0x51, 0x12, 0x10, 0x0a,
+	0x03, 0x6f, 0x77, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6f, 0x77, 0x6e, 0x12,
+	0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70, 0x22, 0x36, 0x0a,
+	0x14, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65,
+	0x41, 0x6c, 0x6c, 0x52, 0x53, 0x12, 0x1e, 0x0a, 0x03, 0x65, 0x72, 0x72, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x57, 0x61, 0x6c, 0x2e, 0x45, 0x72, 0x72, 0x49, 0x6e, 0x66, 0x6f,
+	0x52, 0x03, 0x65, 0x72, 0x72, 0x22, 0x82, 0x01, 0x0a, 0x08, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e,
+	0x66, 0x6f, 0x12, 0x10, 0x0a, 0x03, 0x6f, 0x77, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52,
+	0x03, 0x6f, 0x77, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61,
+	0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x16,
+	0x0a, 0x06, 0x70, 0x61, 0x73, 0x73, 0x77, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06,
+	0x70, 0x61, 0x73, 0x73, 0x77, 0x64, 0x12, 0x22, 0x0a, 0x0c, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74,
+	0x65, 0x72, 0x54, 0x69, 0x6d, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x72, 0x65,
+	0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x54, 0x69, 0x6d, 0x65, 0x22, 0x34, 0x0a, 0x0a, 0x46, 0x72,
+	0x69, 0x65, 0x6e, 0x64, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x10, 0x0a, 0x03, 0x6f, 0x77, 0x6e, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6f, 0x77, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x70, 0x65,
+	0x65, 0x72, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x03, 0x52, 0x05, 0x70, 0x65, 0x65, 0x72, 0x73,
+	0x42, 0x0e, 0x5a, 0x0c, 0x2e, 0x2e, 0x2f, 0x73, 0x72, 0x63, 0x2f, 0x61, 0x6c, 0x6c, 0x70, 0x62,
 }
 
 var (
@@ -1340,7 +1660,7 @@ func file_pb_protoc_all_proto_rawDescGZIP() []byte {
 	return file_pb_protoc_all_proto_rawDescData
 }
 
-var file_pb_protoc_all_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_pb_protoc_all_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_pb_protoc_all_proto_goTypes = []interface{}{
 	(*ErrInfo)(nil),              // 0: Wal.ErrInfo
 	(*RegisterRQ)(nil),           // 1: Wal.RegisterRQ
@@ -1351,33 +1671,38 @@ var file_pb_protoc_all_proto_goTypes = []interface{}{
 	(*SendToPersonalRS)(nil),     // 6: Wal.SendToPersonalRS
 	(*CreateTempGroupRQ)(nil),    // 7: Wal.CreateTempGroupRQ
 	(*CreateTempGroupRS)(nil),    // 8: Wal.CreateTempGroupRS
-	(*SendToTempGroupRQ)(nil),    // 9: Wal.SendToTempGroupRQ
-	(*SendToTempGroupRS)(nil),    // 10: Wal.SendToTempGroupRS
-	(*SubscribePersonRQ)(nil),    // 11: Wal.SubscribePersonRQ
-	(*SubscribePersonRS)(nil),    // 12: Wal.SubscribePersonRS
-	(*SubscribeTempGroupRQ)(nil), // 13: Wal.SubscribeTempGroupRQ
-	(*SubscribeTempGroupRS)(nil), // 14: Wal.SubscribeTempGroupRS
-	(*PublishPersonalMsgRQ)(nil), // 15: Wal.PublishPersonalMsgRQ
-	(*PublishPersonalMsgRS)(nil), // 16: Wal.PublishPersonalMsgRS
-	(*PublishGroupMsgRQ)(nil),    // 17: Wal.PublishGroupMsgRQ
-	(*PublishGroupMsgRS)(nil),    // 18: Wal.PublishGroupMsgRS
-	(*CancelSubscribeAllRQ)(nil), // 19: Wal.CancelSubscribeAllRQ
-	(*CancelSubscribeAllRS)(nil), // 20: Wal.CancelSubscribeAllRS
+	(*JoinGroupRQ)(nil),          // 9: Wal.JoinGroupRQ
+	(*JoinGroupRS)(nil),          // 10: Wal.JoinGroupRS
+	(*SendToTempGroupRQ)(nil),    // 11: Wal.SendToTempGroupRQ
+	(*SendToTempGroupRS)(nil),    // 12: Wal.SendToTempGroupRS
+	(*SubscribePersonRQ)(nil),    // 13: Wal.SubscribePersonRQ
+	(*SubscribePersonRS)(nil),    // 14: Wal.SubscribePersonRS
+	(*SubscribeTempGroupRQ)(nil), // 15: Wal.SubscribeTempGroupRQ
+	(*SubscribeTempGroupRS)(nil), // 16: Wal.SubscribeTempGroupRS
+	(*PublishPersonalMsgRQ)(nil), // 17: Wal.PublishPersonalMsgRQ
+	(*PublishPersonalMsgRS)(nil), // 18: Wal.PublishPersonalMsgRS
+	(*PublishGroupMsgRQ)(nil),    // 19: Wal.PublishGroupMsgRQ
+	(*PublishGroupMsgRS)(nil),    // 20: Wal.PublishGroupMsgRS
+	(*CancelSubscribeAllRQ)(nil), // 21: Wal.CancelSubscribeAllRQ
+	(*CancelSubscribeAllRS)(nil), // 22: Wal.CancelSubscribeAllRS
+	(*UserInfo)(nil),             // 23: Wal.UserInfo
+	(*FriendInfo)(nil),           // 24: Wal.FriendInfo
 }
 var file_pb_protoc_all_proto_depIdxs = []int32{
 	0, // 0: Wal.RegisterRS.err:type_name -> Wal.ErrInfo
 	0, // 1: Wal.LoginRS.err:type_name -> Wal.ErrInfo
 	0, // 2: Wal.SendToPersonalRS.err:type_name -> Wal.ErrInfo
 	0, // 3: Wal.CreateTempGroupRS.err:type_name -> Wal.ErrInfo
-	0, // 4: Wal.SendToTempGroupRS.err:type_name -> Wal.ErrInfo
-	0, // 5: Wal.SubscribePersonRS.err:type_name -> Wal.ErrInfo
-	0, // 6: Wal.SubscribeTempGroupRS.err:type_name -> Wal.ErrInfo
-	0, // 7: Wal.CancelSubscribeAllRS.err:type_name -> Wal.ErrInfo
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	0, // 4: Wal.JoinGroupRS.err:type_name -> Wal.ErrInfo
+	0, // 5: Wal.SendToTempGroupRS.err:type_name -> Wal.ErrInfo
+	0, // 6: Wal.SubscribePersonRS.err:type_name -> Wal.ErrInfo
+	0, // 7: Wal.SubscribeTempGroupRS.err:type_name -> Wal.ErrInfo
+	0, // 8: Wal.CancelSubscribeAllRS.err:type_name -> Wal.ErrInfo
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_pb_protoc_all_proto_init() }
@@ -1495,7 +1820,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SendToTempGroupRQ); i {
+			switch v := v.(*JoinGroupRQ); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1507,7 +1832,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SendToTempGroupRS); i {
+			switch v := v.(*JoinGroupRS); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1519,7 +1844,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SubscribePersonRQ); i {
+			switch v := v.(*SendToTempGroupRQ); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1531,7 +1856,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SubscribePersonRS); i {
+			switch v := v.(*SendToTempGroupRS); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1543,7 +1868,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SubscribeTempGroupRQ); i {
+			switch v := v.(*SubscribePersonRQ); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1555,7 +1880,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SubscribeTempGroupRS); i {
+			switch v := v.(*SubscribePersonRS); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1567,7 +1892,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PublishPersonalMsgRQ); i {
+			switch v := v.(*SubscribeTempGroupRQ); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1579,7 +1904,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PublishPersonalMsgRS); i {
+			switch v := v.(*SubscribeTempGroupRS); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1591,7 +1916,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PublishGroupMsgRQ); i {
+			switch v := v.(*PublishPersonalMsgRQ); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1603,7 +1928,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PublishGroupMsgRS); i {
+			switch v := v.(*PublishPersonalMsgRS); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1615,7 +1940,7 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CancelSubscribeAllRQ); i {
+			switch v := v.(*PublishGroupMsgRQ); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1627,7 +1952,55 @@ func file_pb_protoc_all_proto_init() {
 			}
 		}
 		file_pb_protoc_all_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PublishGroupMsgRS); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pb_protoc_all_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CancelSubscribeAllRQ); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pb_protoc_all_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*CancelSubscribeAllRS); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pb_protoc_all_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UserInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pb_protoc_all_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*FriendInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1645,7 +2018,7 @@ func file_pb_protoc_all_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_pb_protoc_all_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
