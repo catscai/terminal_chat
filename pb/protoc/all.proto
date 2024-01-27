@@ -66,6 +66,7 @@ message JoinGroupRQ {
 
 message JoinGroupRS {
   optional ErrInfo  err = 1;
+  optional string   groupName = 2;
 }
 
 message SendToTempGroupRQ {
@@ -121,6 +122,8 @@ message PublishGroupMsgRQ {
   optional string name = 2;
   optional string content = 3;
   optional int64  timeStamp = 4;
+  optional int64  peer = 5;
+  optional string peerName = 6;
 }
 
 message PublishGroupMsgRS {

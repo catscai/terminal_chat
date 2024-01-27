@@ -1,10 +1,8 @@
 package pb
 
-type PackType uint32
-
 // client -> server
 const (
-	PackRegisterRQ PackType = iota
+	PackRegisterRQ uint32 = iota
 	PackRegisterRS
 	PackLoginRQ
 	PackLoginRS
@@ -26,7 +24,7 @@ const (
 
 // server -> client
 const (
-	PackPublishPersonalMsgRQ PackType = iota + 10000
+	PackPublishPersonalMsgRQ uint32 = iota + 10000
 	PackPublishPersonalMsgRS
 	PackPublishGroupMsgRQ
 	PackPublishGroupMsgRS

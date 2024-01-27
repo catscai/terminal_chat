@@ -160,6 +160,11 @@ func HandleLoginRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err err
 	}
 	GUserSession.Store(req.GetOwn(), sessInfo)
 
+	if oldSessValue := ctx.GetProperty(Self); oldSessValue != nil {
+		oldSess := oldSessValue.(*UserSession)
+		GUserSession.Delete(oldSess.Own)
+	}
+
 	ctx.SetProperty(Self, sessInfo)
 	return
 }
@@ -249,11 +254,14 @@ func HandleSendToGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (e
 	// 异步发送
 
 	_ = GAsyncIoPool.SendTask(uint64(req.GetGroup()), func() {
+		sess := sessInfoValue.(*UserSession)
 		msgRq := &allpb.PublishGroupMsgRQ{
 			Group:     req.Group,
 			Name:      &groupInfo.Name,
 			Content:   req.Content,
 			TimeStamp: req.TimeStamp,
+			Peer:      &sess.Own,
+			PeerName:  &sess.Name,
 		}
 		data, _ := proto.Marshal(msgRq)
 		groupInfo.Members.Range(func(key, value interface{}) bool {
