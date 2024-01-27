@@ -28,7 +28,9 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	msgPrintStatus(0, 0, "", "连接服务器")
 	GCli.SetProcess(HandlerNotify)
-	err := http.ListenAndServe("127.0.0.1:2323", &ClientHttpHandler{})
+	http.Handle("/api", &ClientHttpHandler{})
+	err := http.ListenAndServe("127.0.0.1:2323", nil)
 	panic(err)
 }

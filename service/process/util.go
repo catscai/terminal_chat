@@ -54,6 +54,11 @@ var genUidMap map[int64]struct{} // 已经被使用的uid
 var genGroupLock sync.RWMutex
 var genGroupMap map[int64]struct{} // 已经被使用的group
 
+func init() {
+	genUidMap = make(map[int64]struct{})
+	genGroupMap = make(map[int64]struct{})
+}
+
 func GenUID(logger clog.ICatLog) int64 {
 	genUidLock.Lock()
 	defer genUidLock.Unlock()

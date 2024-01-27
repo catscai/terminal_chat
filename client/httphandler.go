@@ -8,6 +8,7 @@ import (
 	"github.com/catscai/terminal_chat/pb"
 	"github.com/catscai/terminal_chat/pb/src/allpb"
 	"github.com/golang/protobuf/proto"
+	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 	"strings"
@@ -57,6 +58,7 @@ func NetSend(reqType, rspType uint32, reqMsg, rspMsg proto.Message, session uint
 }
 
 func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+	Logger.Debug("ServeHTTP begin", zap.Any("header", req.Header))
 	command := req.Header.Get("command")
 
 	setResErr := func(code int, desc string) {

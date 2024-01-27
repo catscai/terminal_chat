@@ -21,4 +21,5 @@ func main() {
 	}
 	process.OnInit()
 	process.GSer.Run()
+	select {}
 }
