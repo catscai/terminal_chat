@@ -5,6 +5,7 @@ import (
 	"github.com/catscai/terminal_chat/service/process"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
+	"time"
 )
 
 const AppName = "terminal-chat"
@@ -21,5 +22,7 @@ func main() {
 	}
 	process.OnInit()
 	process.GSer.Run()
-	select {}
+	for {
+		time.Sleep(time.Hour)
+	}
 }

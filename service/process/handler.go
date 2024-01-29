@@ -278,6 +278,10 @@ func HandleSendToGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (e
 		data, _ := proto.Marshal(msgRq)
 		groupInfo.Members.Range(func(key, value interface{}) bool {
 			uid := key.(int64)
+			if uid == req.GetOwn() {
+				// 发送给组的消息 过滤掉自己
+				return true
+			}
 			sessValue, ok := GUserSession.Load(uid)
 			if !ok || sessValue == nil {
 				return true
@@ -346,7 +350,7 @@ func HandleSubscribeGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message)
 }
 
 func HandleCancelSubscribeAllRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err error) {
-	const funcName = "HandleCreateGroupRQ"
+	const funcName = "HandleCancelSubscribeAllRQ"
 	req := reqMsg.(*allpb.CancelSubscribeAllRQ)
 	res := rspMsg.(*allpb.CancelSubscribeAllRS)
 	res.Err = GenErr(pb.CodeOK, "取消所有订阅成功")
@@ -411,16 +415,15 @@ func HandleCreateGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (e
 
 	group := GenGroup()
 
-	var members sync.Map
-	members.Store(req.GetOwn(), time.Now().Unix())
+	ctx.Debug(funcName+" GenGroup", zap.Any("group", group))
 
 	groupInfo := &TempGroupInfo{
 		Group:      group,
 		Name:       req.GetName(),
 		Code:       req.GetCode(),
 		CreateTime: req.GetTimeStamp(),
-		Members:    members, // 创建成功后，创建人成为订阅者
 	}
+	groupInfo.Members.Store(req.GetOwn(), time.Now().Unix())
 
 	GGroupMap.Store(group, groupInfo)
 
@@ -472,6 +475,6 @@ func HandleJoinGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err
 		res.Err = GenErr(pb.CodeOK, "退出讨论组成功")
 		sessInfo.ownJoinGroup.Delete(req.GetGroup())
 	}
-
+	res.GroupName = &groupInfo.Name
 	return
 }

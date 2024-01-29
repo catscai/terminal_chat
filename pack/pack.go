@@ -10,4 +10,5 @@ const (
 	SendToPersonal     = "sendToPersonal"
 	SendToGroup        = "sendToGroup"
 	CreateGroup        = "createGroup"
+	ReConn             = "reConn"
 )

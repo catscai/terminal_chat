@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/catscai/ccat/iface/imsg"
+	"github.com/catscai/ccat/impl/client"
 	"github.com/catscai/ccat/impl/msg"
 	"github.com/catscai/terminal_chat/pack"
 	"github.com/catscai/terminal_chat/pb"
@@ -76,7 +77,7 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		name := req.Header.Get("name")
 		passwd := req.Header.Get("passwd")
 		verifyCodeStr := req.Header.Get("verifyCode")
-		if len(email) > 20 || len(name) > 6 || len(passwd) > 20 {
+		if len(email) > 20 || len(name) > 10 || len(passwd) > 20 {
 			setResErr(1, "名字或密码长度过长")
 			return
 		}
@@ -137,7 +138,7 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		}
 	case pack.Join:
 		groupStr := req.Header.Get("group")
-		codeStr := req.Header.Get("code")
+		codeStr := req.Header.Get("verifyCode")
 		opStr := req.Header.Get("op")
 		if !c.IsLogin {
 			setResErr(1, "用户未登录,无法操作")
@@ -338,7 +339,7 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			TimeStamp: &nowUnix,
 		}
 		msgRs := &allpb.CreateTempGroupRS{}
-		if err := NetSend(pb.PackSendToGroupRQ, pb.PackSendToGroupRS, msgRq, msgRs, GetSessionID()); err != nil {
+		if err := NetSend(pb.PackCreateGroupRQ, pb.PackCreateGroupRS, msgRq, msgRs, GetSessionID()); err != nil {
 			setResErr(4, "网络发送失败")
 			return
 		}
@@ -348,5 +349,15 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		} else {
 			msgPrintStatus(1, c.Own, c.Name, "创建讨论组："+msgRq.GetName())
 		}
+	case pack.ReConn:
+		// 重新连接
+		GCli.Close()
+		GCli = client.NewClient(Logger, &msg.DefaultDataPack{}, &msg.DefaultHeaderOperator{}, uint32(SendChanLen), time.Second*3)
+		if err := GCli.Connection("tcp", SerAddr, time.Second*3); err != nil {
+			msgPrintStatus(1, 0, "", "重新连接服务器")
+			return
+		}
+		msgPrintStatus(0, 0, "", "重新连接服务器")
+		GCli.SetProcess(HandlerNotify)
 	}
 }

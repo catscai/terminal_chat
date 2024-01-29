@@ -51,7 +51,7 @@ var genUidLock sync.RWMutex
 
 var genUidMap map[int64]struct{} // 已经被使用的uid
 
-var genGroupLock sync.RWMutex
+var genGroupLock sync.Mutex
 var genGroupMap map[int64]struct{} // 已经被使用的group
 
 func init() {
@@ -84,7 +84,7 @@ func GenUID(logger clog.ICatLog) int64 {
 
 func GenGroup() int64 {
 	genGroupLock.Lock()
-	defer genUidLock.Unlock()
+	defer genGroupLock.Unlock()
 	var curID int64
 	for {
 		id := rand.Intn(GroupMax-GroupMin+1) + GroupMin
