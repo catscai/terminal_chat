@@ -9,4 +9,5 @@ const (
 	CancelAllSubscribe = "cancelAllSubscribe"
 	SendToPersonal     = "sendToPersonal"
 	SendToGroup        = "sendToGroup"
+	CreateGroup        = "createGroup"
 )

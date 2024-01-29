@@ -42,13 +42,13 @@ func formatGroup(id, group int64, name, groupName string, seconds int64) string 
 	return fmt.Sprintf("%s(%d)[%s-%d]-%s", name, id, groupName, group, t)
 }
 
-func msgPrintOwn(personal, content string) {
+func msgPrintPeer(personal, content string) {
 	fmt.Println(personal)
 	formatContent := fmt.Sprintf("\033[38;2;20;160;43m: \033[0m%s", content)
 	fmt.Println(formatContent)
 }
 
-func msgPrintPeer(personal, content string) {
+func msgPrintOwn(personal, content string) {
 	w := tabwriter.NewWriter(os.Stdout, 15, 0, 1, ' ', tabwriter.AlignRight)
 	fmt.Fprintln(w, "\t\t\t"+personal)
 	formatContent := fmt.Sprintf("\033[38;2;20;160;43m: \033[0m%s", content)

@@ -317,5 +317,36 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			formatSelf := colouration(c.ColorCode, personal)
 			msgPrintOwn(formatSelf, msgRq.GetContent())
 		}
+	case pack.CreateGroup:
+		if !c.IsLogin {
+			setResErr(1, "用户未登录,无法操作")
+			return
+		}
+		codeStr := req.Header.Get("verifyCode")
+		groupName := req.Header.Get("name")
+		code, err2 := strconv.ParseInt(codeStr, 10, 64)
+		if err2 != nil {
+			setResErr(2, "参数格式错误,无法操作")
+			return
+		}
+
+		nowUnix := time.Now().Unix()
+		msgRq := &allpb.CreateTempGroupRQ{
+			Own:       &c.Own,
+			Name:      &groupName,
+			Code:      &code,
+			TimeStamp: &nowUnix,
+		}
+		msgRs := &allpb.CreateTempGroupRS{}
+		if err := NetSend(pb.PackSendToGroupRQ, pb.PackSendToGroupRS, msgRq, msgRs, GetSessionID()); err != nil {
+			setResErr(4, "网络发送失败")
+			return
+		}
+		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
+		if msgRs.GetErr().GetCode() == pb.CodeOK {
+			msgPrintStatus(0, c.Own, c.Name, "创建讨论组："+fmt.Sprintf("%s(%d);验证码:%d", msgRq.GetName(), msgRs.GetGroup(), msgRs.GetCode()))
+		} else {
+			msgPrintStatus(1, c.Own, c.Name, "创建讨论组："+msgRq.GetName())
+		}
 	}
 }

@@ -17,9 +17,13 @@ const AppName = "terminal-chat-client"
 var GCli *client.Client
 
 func main() {
-	logdir := *flag.String("logdir", "./logs/", "日志输出目录")
-	sendChanLen := *flag.Int("sendChanLen", 300, "发送管道长度")
-	addr := *flag.String("addr", "127.0.0.1:2233", "服务器地址")
+	var logdir, addr, cliAddr string
+	var sendChanLen int
+	flag.StringVar(&logdir, "logdir", "./logs/", "日志输出目录")
+	flag.IntVar(&sendChanLen, "sendChanLen", 300, "发送管道长度")
+	flag.StringVar(&addr, "addr", "127.0.0.1:2233", "服务器地址")
+	flag.StringVar(&cliAddr, "cliaddr", "127.0.0.1:2324", "客户端默认地址")
+	flag.Parse()
 	Logger = clog.NewZapLogger("debug", AppName,
 		logdir, 128, 7, 30, false, false)
 
@@ -31,6 +35,6 @@ func main() {
 	msgPrintStatus(0, 0, "", "连接服务器")
 	GCli.SetProcess(HandlerNotify)
 	http.Handle("/api", &ClientHttpHandler{})
-	err := http.ListenAndServe("127.0.0.1:2323", nil)
+	err := http.ListenAndServe(cliAddr, nil)
 	panic(err)
 }

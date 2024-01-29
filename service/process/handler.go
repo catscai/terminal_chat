@@ -77,6 +77,14 @@ func GenErr(code int32, desc string) *allpb.ErrInfo {
 	return &allpb.ErrInfo{Code: &code, Msg: &desc}
 }
 
+func GetSelf(ctx *iface.CatContext) *UserSession {
+	sessInfoValue := ctx.GetProperty(Self)
+	if sessInfoValue == nil {
+		return nil
+	}
+	return sessInfoValue.(*UserSession)
+}
+
 func HandleRegisterRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err error) {
 	const funcName = "HandleRegisterRQ"
 	req := reqMsg.(*allpb.RegisterRQ)
@@ -175,13 +183,16 @@ func HandleSendToPersonalRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message)
 	res := rspMsg.(*allpb.SendToPersonalRS)
 	res.Err = GenErr(pb.CodeOK, "私人消息发送成功")
 
-	ctx.Debug(funcName+" begin", zap.Any("req", req))
+	var sessInfo *UserSession
+
+	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
+
 	defer func() {
-		ctx.Debug(funcName+" end", zap.Any("res", res))
+		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
 	}()
 
-	sessInfoValue := ctx.GetProperty(Self)
-	if sessInfoValue == nil {
+	sessInfo = GetSelf(ctx)
+	if sessInfo == nil {
 		res.Err = GenErr(pb.CodeSendError, "用户不在线上,请先登陆")
 		ctx.Warn(funcName + " user is offline")
 		return
@@ -190,18 +201,17 @@ func HandleSendToPersonalRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message)
 	value, ok := GUserSession.Load(req.GetPeer())
 	if !ok || value == nil {
 		res.Err = GenErr(pb.CodeSendError, "发送失败,对方不在线")
-		ctx.Warn(funcName+" peer is offline", zap.Any("peer", req.GetPeer()))
+		ctx.Warn(funcName+" peer is offline", zap.Any("peer", req.GetPeer()), zap.Any("self", sessInfo))
 		return
 	}
 	peerSess := value.(*UserSession)
-	if _, ok := peerSess.subscribe.Load(req.GetOwn()); !ok {
+	if _, ok := peerSess.ownSubscribe.Load(req.GetOwn()); !ok {
 		res.Err = GenErr(pb.CodeSendError, "发送失败,对方没有订阅你")
-		ctx.Warn(funcName+" peer not subscribe own", zap.Any("own", req.GetOwn()), zap.Any("peer", req.GetPeer()))
+		ctx.Warn(funcName+" peer not subscribe own", zap.Any("own", req.GetOwn()), zap.Any("peer", req.GetPeer()), zap.Any("self", sessInfo))
 		return
 	}
 
 	// 异步发送
-	sessInfo := sessInfoValue.(*UserSession)
 	_ = GAsyncIoPool.SendTask(uint64(req.GetPeer()), func() {
 		msgRq := &allpb.PublishPersonalMsgRQ{
 			Peer:      req.Own,
@@ -224,13 +234,16 @@ func HandleSendToGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (e
 	res := rspMsg.(*allpb.SendToTempGroupRS)
 	res.Err = GenErr(pb.CodeOK, "组消息发送成功")
 
-	ctx.Debug(funcName+" begin", zap.Any("req", req))
+	var sessInfo *UserSession
+
+	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
+
 	defer func() {
-		ctx.Debug(funcName+" end", zap.Any("res", res))
+		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
 	}()
 
-	sessInfoValue := ctx.GetProperty(Self)
-	if sessInfoValue == nil {
+	sessInfo = GetSelf(ctx)
+	if sessInfo == nil {
 		res.Err = GenErr(pb.CodeSendError, "用户不在线上,请先登陆")
 		ctx.Warn(funcName + " user is offline")
 		return
@@ -254,14 +267,13 @@ func HandleSendToGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (e
 	// 异步发送
 
 	_ = GAsyncIoPool.SendTask(uint64(req.GetGroup()), func() {
-		sess := sessInfoValue.(*UserSession)
 		msgRq := &allpb.PublishGroupMsgRQ{
 			Group:     req.Group,
 			Name:      &groupInfo.Name,
 			Content:   req.Content,
 			TimeStamp: req.TimeStamp,
-			Peer:      &sess.Own,
-			PeerName:  &sess.Name,
+			Peer:      &sessInfo.Own,
+			PeerName:  &sessInfo.Name,
 		}
 		data, _ := proto.Marshal(msgRq)
 		groupInfo.Members.Range(func(key, value interface{}) bool {
@@ -288,32 +300,39 @@ func HandleSubscribePersonalRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Messa
 	res := rspMsg.(*allpb.SubscribePersonRS)
 	res.Err = GenErr(pb.CodeOK, "订阅对方消息成功")
 
-	ctx.Debug(funcName+" begin", zap.Any("req", req))
+	var sessInfo *UserSession
+
+	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
+
 	defer func() {
-		ctx.Debug(funcName+" end", zap.Any("res", res))
+		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
 	}()
 
-	sessInfoValue := ctx.GetProperty(Self)
-	if sessInfoValue == nil {
-		res.Err = GenErr(pb.CodeSubscribeError, "用户不在线上,请先登陆")
+	sessInfo = GetSelf(ctx)
+	if sessInfo == nil {
+		res.Err = GenErr(pb.CodeSendError, "用户不在线上,请先登陆")
 		ctx.Warn(funcName + " user is offline")
 		return
 	}
-
-	ownSess := sessInfoValue.(*UserSession)
 	nowUnix := time.Now().Unix()
 	for _, peer := range req.GetPeers() {
 		value, ok := GUserSession.Load(peer)
 		if !ok || value == nil {
 			continue
 		}
+		if req.GetOwn() == peer {
+			// 不能自己订阅自己
+			continue
+		}
 		sess := value.(*UserSession)
 		if req.GetOp() == 0 {
 			sess.subscribe.Store(req.GetOwn(), nowUnix)
-			ownSess.ownSubscribe.Store(peer, nowUnix)
+			sessInfo.ownSubscribe.Store(peer, nowUnix)
+			ctx.Debug("subscribe info", zap.Any("own", req.GetOwn()), zap.Any("peer", peer), zap.Any("syncMap", sess.subscribe))
 		} else {
 			sess.subscribe.Delete(req.GetOwn())
-			ownSess.ownSubscribe.Delete(peer)
+			sessInfo.ownSubscribe.Delete(peer)
+			ctx.Debug("subscribe info delete", zap.Any("own", req.GetOwn()), zap.Any("peer", peer), zap.Any("syncMap", sess.subscribe))
 		}
 		res.Peers = append(res.Peers, peer)
 	}
@@ -332,20 +351,20 @@ func HandleCancelSubscribeAllRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Mess
 	res := rspMsg.(*allpb.CancelSubscribeAllRS)
 	res.Err = GenErr(pb.CodeOK, "取消所有订阅成功")
 
-	ctx.Debug(funcName+" begin", zap.Any("req", req))
+	var sessInfo *UserSession
+
+	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
 	defer func() {
-		ctx.Debug(funcName+" end", zap.Any("res", res))
+		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
 	}()
 
-	sessInfoValue := ctx.GetProperty(Self)
-	if sessInfoValue == nil {
-		res.Err = GenErr(pb.CodeCancelSubscribeError, "用户不在线上,请先登陆")
+	sessInfo = GetSelf(ctx)
+	if sessInfo == nil {
+		res.Err = GenErr(pb.CodeSendError, "用户不在线上,请先登陆")
 		ctx.Warn(funcName + " user is offline")
 		return
 	}
-
-	ownSess := sessInfoValue.(*UserSession)
-	ownSess.ownSubscribe.Range(func(key, value interface{}) bool {
+	sessInfo.ownSubscribe.Range(func(key, value interface{}) bool {
 		peer := key.(int64)
 		val, ok := GUserSession.Load(peer)
 		if !ok || val == nil {
@@ -356,7 +375,7 @@ func HandleCancelSubscribeAllRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Mess
 		return true
 	})
 
-	ownSess.ownJoinGroup.Range(func(key, value interface{}) bool {
+	sessInfo.ownJoinGroup.Range(func(key, value interface{}) bool {
 		group := key.(int64)
 		val, ok := GGroupMap.Load(group)
 		if !ok || val == nil {
@@ -376,14 +395,16 @@ func HandleCreateGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (e
 	res := rspMsg.(*allpb.CreateTempGroupRS)
 	res.Err = GenErr(pb.CodeOK, "创建讨论组成功")
 
-	ctx.Debug(funcName+" begin", zap.Any("req", req))
+	var sessInfo *UserSession
+
+	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
 	defer func() {
-		ctx.Debug(funcName+" end", zap.Any("res", res))
+		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
 	}()
 
-	sessInfoValue := ctx.GetProperty(Self)
-	if sessInfoValue == nil {
-		res.Err = GenErr(pb.CodeCreateGroupError, "用户不在线上,请先登陆")
+	sessInfo = GetSelf(ctx)
+	if sessInfo == nil {
+		res.Err = GenErr(pb.CodeSendError, "用户不在线上,请先登陆")
 		ctx.Warn(funcName + " user is offline")
 		return
 	}
@@ -414,14 +435,16 @@ func HandleJoinGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err
 	req := reqMsg.(*allpb.JoinGroupRQ)
 	res := rspMsg.(*allpb.JoinGroupRS)
 
-	ctx.Debug(funcName+" begin", zap.Any("req", req))
+	var sessInfo *UserSession
+
+	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
 	defer func() {
-		ctx.Debug(funcName+" end", zap.Any("res", res))
+		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
 	}()
 
-	sessInfoValue := ctx.GetProperty(Self)
-	if sessInfoValue == nil {
-		res.Err = GenErr(pb.CodeJoinError, "用户不在线上,请先登陆")
+	sessInfo = GetSelf(ctx)
+	if sessInfo == nil {
+		res.Err = GenErr(pb.CodeSendError, "用户不在线上,请先登陆")
 		ctx.Warn(funcName + " user is offline")
 		return
 	}
@@ -434,8 +457,6 @@ func HandleJoinGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err
 	}
 
 	groupInfo := value.(*TempGroupInfo)
-
-	sess := sessInfoValue.(*UserSession)
 	if req.GetOp() == 0 {
 		if groupInfo.Code != req.GetCode() {
 			res.Err = GenErr(pb.CodeJoinError, "讨论组加入码不正确")
@@ -445,11 +466,11 @@ func HandleJoinGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err
 		nowUnix := time.Now().Unix()
 		groupInfo.Members.Store(req.GetOwn(), nowUnix)
 		res.Err = GenErr(pb.CodeOK, "加入讨论组成功")
-		sess.ownJoinGroup.Store(req.GetGroup(), nowUnix)
+		sessInfo.ownJoinGroup.Store(req.GetGroup(), nowUnix)
 	} else {
 		groupInfo.Members.Delete(req.GetOwn())
 		res.Err = GenErr(pb.CodeOK, "退出讨论组成功")
-		sess.ownJoinGroup.Delete(req.GetGroup())
+		sessInfo.ownJoinGroup.Delete(req.GetGroup())
 	}
 
 	return
