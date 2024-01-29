@@ -61,6 +61,9 @@ func init() {
 				if !flag {
 					// 这个组已经不存在成员了,则将组删除
 					GGroupMap.Delete(key)
+					genGroupLock.Lock()
+					delete(genGroupMap, key.(int64))
+					genGroupLock.Unlock()
 				}
 
 				return true

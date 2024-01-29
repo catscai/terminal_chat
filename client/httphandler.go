@@ -29,6 +29,18 @@ type ClientHttpHandler struct {
 	JoinGroup sync.Map // 加入的组 group -> name
 }
 
+func (c *ClientHttpHandler) reset() {
+	c.IsLogin = false
+	c.Own = 0
+	c.Name = ""
+	c.LoginTime = 0
+	c.ColorCode = ""
+	c.JoinGroup.Range(func(key, value interface{}) bool {
+		c.JoinGroup.Delete(key)
+		return true
+	})
+}
+
 type MemberInfo struct {
 	ID        int64
 	ColorCode string
@@ -360,6 +372,7 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
 		if msgRs.GetErr().GetCode() == pb.CodeOK {
 			msgPrintStatus(0, c.Own, c.Name, "创建讨论组："+fmt.Sprintf("%s(%d);验证码:%d", msgRq.GetName(), msgRs.GetGroup(), msgRs.GetCode()))
+			c.JoinGroup.Store(msgRs.GetGroup(), msgRq.GetName())
 		} else {
 			msgPrintStatus(1, c.Own, c.Name, "创建讨论组："+msgRq.GetName())
 		}
