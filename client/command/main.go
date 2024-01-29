@@ -19,6 +19,7 @@ type LineParams struct {
 	CancelALl       bool // -na
 	Send            bool // -s
 	ReConn          bool // -reset
+	Status          bool // -status
 
 	Own     int64  // -u
 	Peers   string // -ps
@@ -54,13 +55,14 @@ func ParseFlag() {
 	flag.BoolVar(&LP.Send, "s", false, "发送消息,需要指定p或g,用于发送消息给peer或group")
 	flag.StringVar(&LP.Content, "t", "", "发送的消息内容")
 	flag.BoolVar(&LP.ReConn, "reset", false, "重新连接,需要重新登陆")
+	flag.BoolVar(&LP.Status, "status", false, "查看当前状态信息")
 
 	flag.Parse()
 }
 
 func check() (bool, string) {
 	opts := make([]bool, 0, 10)
-	opts = append(opts, LP.Register, LP.Login, LP.CreateGroup, LP.JoinGroup, LP.Send, LP.CancelALl, LP.SubscribePerson, LP.Cancel, LP.ReConn)
+	opts = append(opts, LP.Register, LP.Login, LP.CreateGroup, LP.JoinGroup, LP.Send, LP.CancelALl, LP.SubscribePerson, LP.Cancel, LP.ReConn, LP.Status)
 	optMap := make(map[bool]int)
 	for _, opt := range opts {
 		optMap[opt]++
@@ -130,6 +132,15 @@ func deal() error {
 		if err != nil {
 			return err
 		}
+		return nil
+	}
+
+	if LP.Status {
+		err, header = SendCommand(pack.GetStatus, 0, "", "", "", "", "", 0, 0, 0, -1)
+		if err != nil {
+			return err
+		}
+		fmt.Println(header.Get("result"))
 		return nil
 	}
 

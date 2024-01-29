@@ -11,4 +11,5 @@ const (
 	SendToGroup        = "sendToGroup"
 	CreateGroup        = "createGroup"
 	ReConn             = "reConn"
+	GetStatus          = "getStatus"
 )

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/catscai/ccat/iface/imsg"
 	"github.com/catscai/ccat/impl/client"
@@ -31,6 +32,19 @@ type ClientHttpHandler struct {
 type MemberInfo struct {
 	ID        int64
 	ColorCode string
+}
+
+type JoinGroupItem struct {
+	Group int64  `json:"group"`
+	Name  string `json:"name"`
+}
+
+type OwnStatus struct {
+	Status    string           `json:"status"`
+	Own       int64            `json:"own"`
+	Name      string           `json:"name"`
+	LoginTime string           `json:"loginTime"`
+	Groups    []*JoinGroupItem `json:"groups"`
 }
 
 var members sync.Map //int64 -> *MemberInfo
@@ -359,5 +373,27 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		}
 		msgPrintStatus(0, 0, "", "重新连接服务器")
 		GCli.SetProcess(HandlerNotify)
+	case pack.GetStatus:
+		ownStatus := &OwnStatus{}
+		if c.IsLogin {
+			ownStatus.Status = "在线中"
+			ownStatus.Own = c.Own
+			ownStatus.Name = c.Name
+			ownStatus.LoginTime = time.Unix(c.LoginTime, 0).String()
+			c.JoinGroup.Range(func(key, value interface{}) bool {
+				group := key.(int64)
+				name := value.(string)
+				ownStatus.Groups = append(ownStatus.Groups, &JoinGroupItem{
+					Group: group,
+					Name:  name,
+				})
+				return true
+			})
+		} else {
+			ownStatus.Status = "未登录"
+		}
+
+		data, _ := json.Marshal(ownStatus)
+		setResHeader("result", string(data))
 	}
 }

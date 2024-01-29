@@ -28,7 +28,10 @@ var chatFile string
 func main() {
 	flag.StringVar(&LogDir, "logdir", "./logs/", "日志输出目录")
 	flag.IntVar(&SendChanLen, "sendChanLen", 300, "发送管道长度")
-	flag.StringVar(&SerAddr, "addr", "127.0.0.1:2233", "服务器地址")
+	flag.StringVar(&SerAddr, "addr", "", "服务器地址")
+	if len(SerAddr) == 0 {
+		SerAddr = "127.0.0.1:2233"
+	}
 	flag.StringVar(&chatFile, "chatOut", "", "聊天内容重定向输出,进程后台运行时有效")
 	var background bool
 	flag.BoolVar(&background, "d", false, "后台启动运行")
