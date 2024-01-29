@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-const httpUrl = "http://localhost:22331/api"
+const httpUrl = "http://localhost:22330/api"
 
 func SendCommand(command string, own int64, name, passwd, email, peers, content string, verify, peer, group int64, op int) (error, http.Header) {
 
