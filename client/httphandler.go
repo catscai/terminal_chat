@@ -301,7 +301,7 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		}
 		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
 		if msgRs.GetErr().GetCode() == pb.CodeOK {
-			personal := formatPersonal(c.Own, c.Name, msgRq.GetTimeStamp())
+			personal := formatPersonalToPeer(peer, msgRs.GetName(), msgRq.GetTimeStamp())
 			formatSelf := colouration(c.ColorCode, personal)
 			msgPrintOwn(formatSelf, msgRq.GetContent())
 		}
@@ -340,7 +340,7 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			if ok && value != nil {
 				groupName = value.(string)
 			}
-			personal := formatGroup(c.Own, group, c.Name, groupName, msgRq.GetTimeStamp())
+			personal := formatGroupToSend(group, groupName, msgRq.GetTimeStamp())
 			formatSelf := colouration(c.ColorCode, personal)
 			msgPrintOwn(formatSelf, msgRq.GetContent())
 		}

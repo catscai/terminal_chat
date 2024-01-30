@@ -40,6 +40,7 @@ message SendToPersonalRQ {
 
 message SendToPersonalRS {
   optional ErrInfo err = 1;
+  optional string  name = 2;
 }
 
 message CreateTempGroupRQ {
@@ -78,6 +79,7 @@ message SendToTempGroupRQ {
 
 message SendToTempGroupRS {
   optional ErrInfo err = 1;
+  optional string  name = 2;
 }
 
 message SubscribePersonRQ {

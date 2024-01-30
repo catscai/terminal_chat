@@ -228,6 +228,8 @@ func HandleSendToPersonalRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message)
 			ctx.Error(funcName+" send msg to personal failed", zap.Error(err), zap.Any("msgRq", msgRq))
 		}
 	})
+
+	res.Name = &peerSess.Name
 	return
 }
 
@@ -298,6 +300,7 @@ func HandleSendToGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (e
 		})
 	})
 
+	res.Name = &groupInfo.Name
 	return
 }
 
