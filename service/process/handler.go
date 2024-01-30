@@ -13,7 +13,7 @@ import (
 
 type UserSession struct {
 	Own       int64
-	Conn      iface.IConn
+	conn      iface.IConn
 	LoginTime int64
 	Name      string
 	subscribe sync.Map // int64 -> int64 peer -> timeStamp 被peer订阅
@@ -40,7 +40,7 @@ func init() {
 		for range t.C {
 			GUserSession.Range(func(key, value interface{}) bool {
 				info := value.(*UserSession)
-				if info.Conn.Valid() == false {
+				if info.conn.Valid() == false {
 					GUserSession.Delete(key)
 				}
 				return true
@@ -167,7 +167,7 @@ func HandleLoginRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err err
 		Own:       req.GetOwn(),
 		Name:      userInfo.GetName(),
 		LoginTime: time.Now().Unix(),
-		Conn:      ctx.IConn,
+		conn:      ctx.IConn,
 	}
 	GUserSession.Store(req.GetOwn(), sessInfo)
 
@@ -224,7 +224,7 @@ func HandleSendToPersonalRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message)
 		}
 		data, _ := proto.Marshal(msgRq)
 		pkg := GPackOp.Full(pb.PackPublishPersonalMsgRQ, data, &msg.DefaultHeader{})
-		if err := peerSess.Conn.SendMsg(pkg); err != nil {
+		if err := peerSess.conn.SendMsg(pkg); err != nil {
 			ctx.Error(funcName+" send msg to personal failed", zap.Error(err), zap.Any("msgRq", msgRq))
 		}
 	})
@@ -293,7 +293,7 @@ func HandleSendToGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (e
 			}
 			sess := sessValue.(*UserSession)
 			pkg := GPackOp.Full(pb.PackPublishGroupMsgRQ, data, &msg.DefaultHeader{})
-			if err := sess.Conn.SendMsg(pkg); err != nil {
+			if err := sess.conn.SendMsg(pkg); err != nil {
 				ctx.Error(funcName+" SendMsg failed", zap.Any("peer", uid), zap.Any("group", req.GetGroup()), zap.Error(err))
 			}
 			return true
@@ -443,7 +443,6 @@ func HandleJoinGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err
 	const funcName = "HandleJoinGroupRQ"
 	req := reqMsg.(*allpb.JoinGroupRQ)
 	res := rspMsg.(*allpb.JoinGroupRS)
-
 	var sessInfo *UserSession
 
 	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
@@ -482,5 +481,57 @@ func HandleJoinGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err
 		sessInfo.ownJoinGroup.Delete(req.GetGroup())
 	}
 	res.GroupName = &groupInfo.Name
+	return
+}
+
+func HandleGroupMembersRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err error) {
+	const funcName = "HandleGroupMembersRQ"
+	req := reqMsg.(*allpb.GroupMembersRQ)
+	res := rspMsg.(*allpb.GroupMembersRS)
+	res.Err = GenErr(pb.CodeOK, "查询讨论组成员成功")
+	var sessInfo *UserSession
+
+	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
+	defer func() {
+		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
+	}()
+
+	sessInfo = GetSelf(ctx)
+	if sessInfo == nil {
+		res.Err = GenErr(pb.CodeGroupMemberError, "用户不在线上,请先登陆")
+		ctx.Warn(funcName + " user is offline")
+		return
+	}
+
+	value, ok := GGroupMap.Load(req.GetGroup())
+	if !ok || value == nil {
+		res.Err = GenErr(pb.CodeGroupMemberError, "讨论组不存在")
+		ctx.Warn(funcName+" this group not exists", zap.Any("group", req.GetGroup()))
+		return
+	}
+
+	groupInfo := value.(*TempGroupInfo)
+
+	if _, ok := groupInfo.Members.Load(req.GetOwn()); !ok {
+		res.Err = GenErr(pb.CodeGroupMemberError, "没有查询组成员权限")
+		ctx.Warn(funcName+" the user not in this group", zap.Any("group", req.GetGroup()))
+		return
+	}
+
+	groupInfo.Members.Range(func(key, value interface{}) bool {
+		uid := key.(int64)
+		timeStamp := value.(int64)
+		info, err := GetUserInfo(ctx, uid)
+		if err != nil {
+			return true
+		}
+		res.Members = append(res.Members, &allpb.GroupMemberItem{
+			Uid:      &uid,
+			Name:     info.Name,
+			JoinTime: &timeStamp,
+		})
+		return true
+	})
+
 	return
 }

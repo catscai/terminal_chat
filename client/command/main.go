@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/catscai/terminal_chat/pack"
 	"github.com/catscai/terminal_chat/pb"
+	"github.com/catscai/terminal_chat/pb/src/allpb"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type LineParams struct {
@@ -136,6 +139,23 @@ func deal() error {
 	}
 
 	if LP.Status {
+		if LP.Group > 0 {
+			err, header = SendCommand(pack.GroupMembers, 0, "", "", "", "", "", 0, 0, LP.Group, -1)
+			if err != nil {
+				return err
+			}
+			str := header.Get("result")
+			values := make([]*allpb.GroupMemberItem, 0)
+			err = json.Unmarshal([]byte(str), &values)
+			if err != nil {
+				fmt.Println("数据解析失败", err, str)
+				return err
+			}
+			for _, value := range values {
+				fmt.Printf("[uid:%d,name:%s,joinTime:%s]\n", value.GetUid(), value.GetName(), time.Unix(value.GetJoinTime(), 0).String())
+			}
+			return nil
+		}
 		err, header = SendCommand(pack.GetStatus, 0, "", "", "", "", "", 0, 0, 0, -1)
 		if err != nil {
 			return err

@@ -106,6 +106,22 @@ message SubscribeTempGroupRS {
   repeated int64  groups = 2;
 }
 
+message GroupMemberItem {
+  optional int64  uid = 1;
+  optional string name = 2;
+  optional int64  joinTime = 3;
+}
+
+message GroupMembersRQ {
+  optional int64  own = 1;
+  optional int64  group = 2;
+}
+
+message GroupMembersRS {
+  optional ErrInfo          err = 1;
+  repeated GroupMemberItem  members = 2;
+}
+
 // server -> client
 
 message PublishPersonalMsgRQ {

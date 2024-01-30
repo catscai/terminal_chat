@@ -12,4 +12,5 @@ const (
 	CreateGroup        = "createGroup"
 	ReConn             = "reConn"
 	GetStatus          = "getStatus"
+	GroupMembers       = "GroupMembers"
 )

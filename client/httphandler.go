@@ -26,7 +26,13 @@ type ClientHttpHandler struct {
 	LoginTime int64
 
 	ColorCode string
-	JoinGroup sync.Map // 加入的组 group -> name
+	JoinGroup sync.Map // 加入的组 group -> *GroupInfo
+}
+
+type GroupInfo struct {
+	Group      int64
+	Name       string
+	VerifyCode int64
 }
 
 func (c *ClientHttpHandler) reset() {
@@ -47,8 +53,9 @@ type MemberInfo struct {
 }
 
 type JoinGroupItem struct {
-	Group int64  `json:"group"`
-	Name  string `json:"name"`
+	Group  int64  `json:"group"`
+	Name   string `json:"name"`
+	Verify int64  `json:"verify"`
 }
 
 type OwnStatus struct {
@@ -154,6 +161,17 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		c.IsLogin = true
 		c.ColorCode = randomTextColor()
 
+		// 登陆成功需要清空旧信息
+		c.JoinGroup.Range(func(key, value interface{}) bool {
+			c.JoinGroup.Delete(key)
+			return true
+		})
+
+		members.Range(func(key, value interface{}) bool {
+			members.Delete(key)
+			return true
+		})
+
 		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
 		setResHeader("name", c.Name)
 		setResHeader("own", c.Own)
@@ -198,7 +216,11 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
 		if msgRs.GetErr().GetCode() == pb.CodeOK {
 			msgPrintStatus(0, c.Own, c.Name, "加入讨论组:"+groupStr)
-			c.JoinGroup.Store(group, msgRs.GetGroupName())
+			c.JoinGroup.Store(group, &GroupInfo{
+				Group:      group,
+				Name:       msgRs.GetGroupName(),
+				VerifyCode: msgRq.GetCode(),
+			})
 		} else {
 			msgPrintStatus(1, c.Own, c.Name, "加入讨论组:"+groupStr)
 		}
@@ -338,7 +360,8 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			value, ok := c.JoinGroup.Load(group)
 			var groupName string
 			if ok && value != nil {
-				groupName = value.(string)
+				info := value.(*GroupInfo)
+				groupName = info.Name
 			}
 			personal := formatGroupToSend(group, groupName, msgRq.GetTimeStamp())
 			formatSelf := colouration(c.ColorCode, personal)
@@ -372,7 +395,11 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
 		if msgRs.GetErr().GetCode() == pb.CodeOK {
 			msgPrintStatus(0, c.Own, c.Name, "创建讨论组："+fmt.Sprintf("%s(%d);验证码:%d", msgRq.GetName(), msgRs.GetGroup(), msgRs.GetCode()))
-			c.JoinGroup.Store(msgRs.GetGroup(), msgRq.GetName())
+			c.JoinGroup.Store(msgRs.GetGroup(), &GroupInfo{
+				Group:      msgRs.GetGroup(),
+				Name:       msgRq.GetName(),
+				VerifyCode: msgRq.GetCode(),
+			})
 		} else {
 			msgPrintStatus(1, c.Own, c.Name, "创建讨论组："+msgRq.GetName())
 		}
@@ -395,10 +422,11 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			ownStatus.LoginTime = time.Unix(c.LoginTime, 0).String()
 			c.JoinGroup.Range(func(key, value interface{}) bool {
 				group := key.(int64)
-				name := value.(string)
+				info := value.(*GroupInfo)
 				ownStatus.Groups = append(ownStatus.Groups, &JoinGroupItem{
-					Group: group,
-					Name:  name,
+					Group:  group,
+					Name:   info.Name,
+					Verify: info.VerifyCode,
 				})
 				return true
 			})
@@ -408,5 +436,39 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 
 		data, _ := json.Marshal(ownStatus)
 		setResHeader("result", string(data))
+	case pack.GroupMembers:
+		if !c.IsLogin {
+			setResErr(1, "用户未登录,无法操作")
+			return
+		}
+		groupStr := req.Header.Get("group")
+		group, err := strconv.ParseInt(groupStr, 10, 64)
+		if err != nil {
+			setResErr(2, "参数格式错误,无法操作")
+			return
+		}
+		value, ok := c.JoinGroup.Load(group)
+		if !ok {
+			setResErr(3, "没有查看权限")
+			return
+		}
+		groupInfo := value.(*GroupInfo)
+		msgRq := &allpb.GroupMembersRQ{
+			Own:   &c.Own,
+			Group: &group,
+		}
+		msgRs := &allpb.GroupMembersRS{}
+		if err := NetSend(pb.PackGroupMemberRQ, pb.PackGroupMemberRS, msgRq, msgRs, GetSessionID()); err != nil {
+			setResErr(4, "网络发送失败")
+			return
+		}
+		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
+		if msgRs.GetErr().GetCode() == pb.CodeOK {
+			msgPrintStatus(0, c.Own, c.Name, "查询讨论组成员："+fmt.Sprintf("%s(%d)", groupInfo.Name, groupInfo.Group))
+			data, _ := json.Marshal(msgRs.GetMembers())
+			setResHeader("result", string(data))
+		} else {
+			msgPrintStatus(1, c.Own, c.Name, "查询讨论组成员："+fmt.Sprintf("%s(%d)", groupInfo.Name, groupInfo.Group))
+		}
 	}
 }

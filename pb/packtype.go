@@ -20,6 +20,8 @@ const (
 	PackCreateGroupRS
 	PackJoinGroupRQ
 	PackJoinGroupRS
+	PackGroupMemberRQ
+	PackGroupMemberRS
 )
 
 // server -> client
@@ -39,4 +41,5 @@ const (
 	CodeJoinError
 	CodeCreateGroupError
 	CodeCancelSubscribeError
+	CodeGroupMemberError
 )

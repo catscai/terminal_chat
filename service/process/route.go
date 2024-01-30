@@ -16,4 +16,5 @@ func RegisterHandler(dispatcher iface.IDispatcher) {
 	dispatcher.RegisterHandlerSimplePB(pb.PackCancelSubscribeAllRQ, pb.PackCancelSubscribeAllRS, &allpb.CancelSubscribeAllRQ{}, &allpb.CancelSubscribeAllRS{}, HandleCancelSubscribeAllRQ)
 	dispatcher.RegisterHandlerSimplePB(pb.PackCreateGroupRQ, pb.PackCreateGroupRS, &allpb.CreateTempGroupRQ{}, &allpb.CreateTempGroupRS{}, HandleCreateGroupRQ)
 	dispatcher.RegisterHandlerSimplePB(pb.PackJoinGroupRQ, pb.PackJoinGroupRS, &allpb.JoinGroupRQ{}, &allpb.JoinGroupRS{}, HandleJoinGroupRQ)
+	dispatcher.RegisterHandlerSimplePB(pb.PackGroupMemberRQ, pb.PackGroupMemberRS, &allpb.GroupMembersRQ{}, &allpb.GroupMembersRS{}, HandleGroupMembersRQ)
 }
