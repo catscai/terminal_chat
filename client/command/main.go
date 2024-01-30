@@ -75,8 +75,8 @@ func check() (bool, string) {
 	}
 
 	if LP.Register {
-		if len(LP.Name) == 0 || len(LP.Email) == 0 {
-			return false, "注册缺少Name或Email"
+		if len(LP.Name) == 0 || len(LP.Passwd) == 0 {
+			return false, "注册缺少Name或Passwd"
 		}
 	}
 	if LP.Login {
@@ -145,6 +145,10 @@ func deal() error {
 				return err
 			}
 			str := header.Get("result")
+			if len(str) == 0 {
+				fmt.Println("没有成员信息")
+				return nil
+			}
 			values := make([]*allpb.GroupMemberItem, 0)
 			err = json.Unmarshal([]byte(str), &values)
 			if err != nil {
@@ -222,14 +226,14 @@ func deal() error {
 	}
 
 	if LP.Cancel {
-		if len(LP.Peers) == 0 {
+		if len(LP.Peers) == 0 && LP.Peer > 0 {
 			LP.Peers = fmt.Sprintf("%d", LP.Peer)
-		} else {
+		} else if len(LP.Peers) > 0 && LP.Peer > 0 {
 			LP.Peers += fmt.Sprintf(",%d", LP.Peer)
 		}
 		if len(LP.Peers) > 0 {
 			err, header = SendCommand(pack.SubscribePersonal, 0, "", "", "", LP.Peers, "", 0, 0, 0, 1)
-		} else {
+		} else if LP.Group > 0 {
 			err, header = SendCommand(pack.Join, 0, "", "", "", "", "", 0, 0, LP.Group, 1)
 		}
 	}

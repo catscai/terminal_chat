@@ -188,16 +188,33 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			setResErr(1, "用户未登录,无法操作")
 			return
 		}
-		if len(groupStr) == 0 || len(codeStr) == 0 || len(opStr) == 0 {
+		if len(groupStr) == 0 || len(opStr) == 0 {
 			setResErr(2, "参数错误,无法操作")
 			return
 		}
+		if !(opStr == "0" || opStr == "1") {
+			setResErr(2, "参数错误,无法操作")
+			return
+		}
+		var code int64
+		var err error
+		if len(codeStr) > 0 {
+			code, err = strconv.ParseInt(codeStr, 10, 64)
+			if err != nil {
+				setResErr(3, "参数格式错误,无法操作")
+				return
+			}
+		}
+
 		group, e1 := strconv.ParseInt(groupStr, 10, 64)
-		code, e2 := strconv.ParseInt(codeStr, 10, 64)
 		op, e3 := strconv.ParseInt(opStr, 10, 64)
-		if e1 != nil || e2 != nil || e3 != nil {
+		if e1 != nil || e3 != nil {
 			setResErr(3, "参数格式错误,无法操作")
 			return
+		}
+		msgStr := "加入讨论组:"
+		if op == 1 {
+			msgStr = "退出讨论组:"
 		}
 		nowUnix := time.Now().Unix()
 		msgRq := &allpb.JoinGroupRQ{
@@ -210,19 +227,24 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		msgRs := &allpb.JoinGroupRS{}
 		if err := NetSend(pb.PackJoinGroupRQ, pb.PackJoinGroupRS, msgRq, msgRs, GetSessionID()); err != nil {
 			setResErr(4, "网络发送失败")
-			msgPrintStatus(1, c.Own, c.Name, "加入讨论组:"+groupStr)
+			msgPrintStatus(1, c.Own, c.Name, msgStr+groupStr)
 			return
 		}
 		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
 		if msgRs.GetErr().GetCode() == pb.CodeOK {
-			msgPrintStatus(0, c.Own, c.Name, "加入讨论组:"+groupStr)
-			c.JoinGroup.Store(group, &GroupInfo{
-				Group:      group,
-				Name:       msgRs.GetGroupName(),
-				VerifyCode: msgRq.GetCode(),
-			})
+			msgPrintStatus(0, c.Own, c.Name, msgStr+groupStr)
+			if op == 0 {
+				c.JoinGroup.Store(group, &GroupInfo{
+					Group:      group,
+					Name:       msgRs.GetGroupName(),
+					VerifyCode: msgRq.GetCode(),
+				})
+			} else {
+				c.JoinGroup.Delete(group)
+			}
+
 		} else {
-			msgPrintStatus(1, c.Own, c.Name, "加入讨论组:"+groupStr)
+			msgPrintStatus(1, c.Own, c.Name, msgStr+groupStr)
 		}
 	case pack.SubscribePersonal:
 		peersStr := req.Header.Get("peers")
