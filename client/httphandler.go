@@ -25,14 +25,10 @@ type ClientHttpHandler struct {
 	Name      string
 	LoginTime int64
 
-	ColorCode string
-	JoinGroup sync.Map // 加入的组 group -> *GroupInfo
-}
-
-type GroupInfo struct {
-	Group      int64
-	Name       string
-	VerifyCode int64
+	ColorCode      string
+	JoinGroup      sync.Map // 加入的组 group -> *JoinGroupItem
+	SubscribePeers sync.Map // 订阅者 peer -> *PeerInfo
+	Followers      sync.Map // 关注者 peer -> *PeerInfo
 }
 
 func (c *ClientHttpHandler) reset() {
@@ -47,23 +43,33 @@ func (c *ClientHttpHandler) reset() {
 	})
 }
 
+type PeerInfo struct {
+	Peer      int64  `json:"peer"`
+	Name      string `json:"name"`
+	TimeStamp string `json:"time"`
+}
+
 type MemberInfo struct {
 	ID        int64
 	ColorCode string
 }
 
 type JoinGroupItem struct {
-	Group  int64  `json:"group"`
-	Name   string `json:"name"`
-	Verify int64  `json:"verify"`
+	Group      int64  `json:"group"`
+	Name       string `json:"name"`
+	VerifyCode int64  `json:"verify"`
+	CreateTime string `json:"createTime"`
+	JoinTime   string `json:"joinTime"`
 }
 
 type OwnStatus struct {
-	Status    string           `json:"status"`
-	Own       int64            `json:"own"`
-	Name      string           `json:"name"`
-	LoginTime string           `json:"loginTime"`
-	Groups    []*JoinGroupItem `json:"groups"`
+	Status     string           `json:"status"`
+	Own        int64            `json:"own"`
+	Name       string           `json:"name"`
+	LoginTime  string           `json:"loginTime"`
+	Groups     []*JoinGroupItem `json:"groups"`
+	Subscribes []*PeerInfo      `json:"subscribes"`
+	Followers  []*PeerInfo      `json:"followers"`
 }
 
 var members sync.Map //int64 -> *MemberInfo
@@ -161,12 +167,6 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		c.IsLogin = true
 		c.ColorCode = randomTextColor()
 
-		// 登陆成功需要清空旧信息
-		c.JoinGroup.Range(func(key, value interface{}) bool {
-			c.JoinGroup.Delete(key)
-			return true
-		})
-
 		members.Range(func(key, value interface{}) bool {
 			members.Delete(key)
 			return true
@@ -177,6 +177,11 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		setResHeader("own", c.Own)
 		if msgRs.GetErr().GetCode() == pb.CodeOK {
 			msgPrintStatus(0, c.Own, c.Name, "登陆")
+			// todo 登陆成功发起请求查询自身关系信息
+			err2 := c.QuerySelfRelation()
+			if err2 != nil {
+				Logger.Error("QuerySelfRelation failed", zap.Error(err2))
+			}
 		} else {
 			msgPrintStatus(1, c.Own, c.Name, "登陆")
 		}
@@ -234,10 +239,12 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		if msgRs.GetErr().GetCode() == pb.CodeOK {
 			msgPrintStatus(0, c.Own, c.Name, msgStr+groupStr)
 			if op == 0 {
-				c.JoinGroup.Store(group, &GroupInfo{
+				c.JoinGroup.Store(group, &JoinGroupItem{
 					Group:      group,
 					Name:       msgRs.GetGroupName(),
 					VerifyCode: msgRq.GetCode(),
+					CreateTime: timeStampToString(nowUnix),
+					JoinTime:   timeStampToString(nowUnix),
 				})
 			} else {
 				c.JoinGroup.Delete(group)
@@ -273,6 +280,10 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			setResErr(3, "参数格式错误,无法操作")
 			return
 		}
+		msgStr := "订阅对方:"
+		if op == 1 {
+			msgStr = "取消订阅对方:"
+		}
 		nowUnix := time.Now().Unix()
 		msgRq := &allpb.SubscribePersonRQ{
 			Own:       &c.Own,
@@ -283,15 +294,28 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		msgRs := &allpb.SubscribePersonRS{}
 		if err := NetSend(pb.PackSubscribePersonalMsgRQ, pb.PackSubscribePersonalMsgRS, msgRq, msgRs, GetSessionID()); err != nil {
 			setResErr(4, "网络发送失败")
-			msgPrintStatus(1, c.Own, c.Name, "订阅对方:"+peersStr)
+			msgPrintStatus(1, c.Own, c.Name, msgStr+peersStr)
 			return
 		}
 		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
 		setResHeader("peers", msgRs.GetPeers())
 		if msgRs.GetErr().GetCode() == pb.CodeOK {
-			msgPrintStatus(0, c.Own, c.Name, "订阅对方:"+peersStr)
+			msgPrintStatus(0, c.Own, c.Name, msgStr+peersStr)
+			if op == 0 {
+				for _, peer := range msgRs.GetPeers() {
+					c.SubscribePeers.Store(peer.GetPeer(), &PeerInfo{
+						Peer:      peer.GetPeer(),
+						Name:      peer.GetName(),
+						TimeStamp: timeStampToString(peer.GetTimeStamp()),
+					})
+				}
+			} else {
+				for _, peer := range msgRs.GetPeers() {
+					c.SubscribePeers.Delete(peer)
+				}
+			}
 		} else {
-			msgPrintStatus(1, c.Own, c.Name, "订阅对方:"+peersStr)
+			msgPrintStatus(1, c.Own, c.Name, msgStr+peersStr)
 		}
 	case pack.CancelAllSubscribe:
 		if !c.IsLogin {
@@ -382,7 +406,7 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			value, ok := c.JoinGroup.Load(group)
 			var groupName string
 			if ok && value != nil {
-				info := value.(*GroupInfo)
+				info := value.(*JoinGroupItem)
 				groupName = info.Name
 			}
 			personal := formatGroupToSend(group, groupName, msgRq.GetTimeStamp())
@@ -417,10 +441,12 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
 		if msgRs.GetErr().GetCode() == pb.CodeOK {
 			msgPrintStatus(0, c.Own, c.Name, "创建讨论组："+fmt.Sprintf("%s(%d);验证码:%d", msgRq.GetName(), msgRs.GetGroup(), msgRs.GetCode()))
-			c.JoinGroup.Store(msgRs.GetGroup(), &GroupInfo{
+			c.JoinGroup.Store(msgRs.GetGroup(), &JoinGroupItem{
 				Group:      msgRs.GetGroup(),
 				Name:       msgRq.GetName(),
 				VerifyCode: msgRq.GetCode(),
+				CreateTime: timeStampToString(nowUnix),
+				JoinTime:   timeStampToString(nowUnix),
 			})
 		} else {
 			msgPrintStatus(1, c.Own, c.Name, "创建讨论组："+msgRq.GetName())
@@ -443,13 +469,18 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			ownStatus.Name = c.Name
 			ownStatus.LoginTime = time.Unix(c.LoginTime, 0).String()
 			c.JoinGroup.Range(func(key, value interface{}) bool {
-				group := key.(int64)
-				info := value.(*GroupInfo)
-				ownStatus.Groups = append(ownStatus.Groups, &JoinGroupItem{
-					Group:  group,
-					Name:   info.Name,
-					Verify: info.VerifyCode,
-				})
+				info := value.(*JoinGroupItem)
+				ownStatus.Groups = append(ownStatus.Groups, info)
+				return true
+			})
+			c.SubscribePeers.Range(func(key, value interface{}) bool {
+				info := value.(*PeerInfo)
+				ownStatus.Subscribes = append(ownStatus.Subscribes, info)
+				return true
+			})
+			c.Followers.Range(func(key, value interface{}) bool {
+				info := value.(*PeerInfo)
+				ownStatus.Followers = append(ownStatus.Followers, info)
 				return true
 			})
 		} else {
@@ -474,7 +505,7 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			setResErr(3, "没有查看权限")
 			return
 		}
-		groupInfo := value.(*GroupInfo)
+		groupInfo := value.(*JoinGroupItem)
 		msgRq := &allpb.GroupMembersRQ{
 			Own:   &c.Own,
 			Group: &group,
@@ -493,4 +524,64 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			msgPrintStatus(1, c.Own, c.Name, "查询讨论组成员："+fmt.Sprintf("%s(%d)", groupInfo.Name, groupInfo.Group))
 		}
 	}
+}
+
+func (c *ClientHttpHandler) QuerySelfRelation() error {
+	if !c.IsLogin {
+		return fmt.Errorf("offline")
+	}
+	msgRq := &allpb.SelfRelationRQ{
+		Own: &c.Own,
+	}
+	msgRs := &allpb.SelfRelationRS{}
+	if err := NetSend(pb.PackSelfRelationRQ, pb.PackSelfRelationRS, msgRq, msgRs, GetSessionID()); err != nil {
+		return err
+	}
+
+	if msgRs.GetErr().GetCode() != pb.CodeOK {
+		return fmt.Errorf(msgRs.GetErr().String())
+	}
+
+	c.JoinGroup.Range(func(key, value interface{}) bool {
+		c.JoinGroup.Delete(key)
+		return true
+	})
+	c.SubscribePeers.Range(func(key, value interface{}) bool {
+		c.SubscribePeers.Delete(key)
+		return true
+	})
+	c.Followers.Range(func(key, value interface{}) bool {
+		c.Followers.Delete(key)
+		return true
+	})
+
+	for _, item := range msgRs.GetGroups() {
+		c.JoinGroup.Store(item.GetGroup(), &JoinGroupItem{
+			Group:      item.GetGroup(),
+			Name:       item.GetName(),
+			CreateTime: timeStampToString(item.GetCreateTime()),
+			JoinTime:   timeStampToString(item.GetJoinTime()),
+			VerifyCode: item.GetCode(),
+		})
+	}
+
+	for _, item := range msgRs.GetSubscribers() {
+		c.SubscribePeers.Store(item.GetPeer(), &PeerInfo{
+			Peer:      item.GetPeer(),
+			Name:      item.GetName(),
+			TimeStamp: timeStampToString(item.GetTimeStamp())})
+	}
+
+	for _, item := range msgRs.GetFollowers() {
+		c.Followers.Store(item.GetPeer(), &PeerInfo{
+			Peer:      item.GetPeer(),
+			Name:      item.GetName(),
+			TimeStamp: timeStampToString(item.GetTimeStamp())})
+	}
+
+	return nil
+}
+
+func timeStampToString(t int64) string {
+	return time.Unix(t, 0).Format("2006-01-02 15:04:05")
 }

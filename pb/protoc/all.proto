@@ -82,6 +82,20 @@ message SendToTempGroupRS {
   optional string  name = 2;
 }
 
+message PeerInfo {
+  optional int64  peer = 1;
+  optional string name = 2;
+  optional int64  timeStamp = 3;
+}
+
+message GroupInfo {
+  optional int64  group = 1;
+  optional string name = 2;
+  optional int64  createTime = 3;
+  optional int64  code = 4;
+  optional int64  joinTime = 5;
+}
+
 message SubscribePersonRQ {
   optional int64  own = 1;
   repeated int64  peers = 2;
@@ -91,7 +105,7 @@ message SubscribePersonRQ {
 
 message SubscribePersonRS {
   optional ErrInfo err = 1;
-  repeated int64  peers = 2;
+  repeated PeerInfo  peers = 2;
 }
 
 message SubscribeTempGroupRQ {
@@ -122,6 +136,17 @@ message GroupMembersRS {
   repeated GroupMemberItem  members = 2;
 }
 
+message SelfRelationRQ {
+  optional int64 own = 1;
+}
+
+message SelfRelationRS {
+  optional ErrInfo    err = 1;
+  repeated PeerInfo   subscribers = 2;
+  repeated PeerInfo   followers = 3;
+  repeated GroupInfo  groups = 4;
+}
+
 // server -> client
 
 message PublishPersonalMsgRQ {
@@ -146,6 +171,16 @@ message PublishGroupMsgRQ {
 
 message PublishGroupMsgRS {
 
+}
+
+message PublishSubscribeMsgRQ {
+  optional int64  peer = 1;
+  optional string name = 2;
+  optional int64  timeStamp = 3;
+  optional int32  op = 4;
+}
+
+message PublishSubscribeMsgRS {
 }
 
 message CancelSubscribeAllRQ {

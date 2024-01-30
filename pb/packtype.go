@@ -22,6 +22,8 @@ const (
 	PackJoinGroupRS
 	PackGroupMemberRQ
 	PackGroupMemberRS
+	PackSelfRelationRQ
+	PackSelfRelationRS
 )
 
 // server -> client
@@ -30,6 +32,8 @@ const (
 	PackPublishPersonalMsgRS
 	PackPublishGroupMsgRQ
 	PackPublishGroupMsgRS
+	PackPublishSubscribeMsgRQ
+	PackPublishSubscribeMsgRS
 )
 
 const (
@@ -42,4 +46,5 @@ const (
 	CodeCreateGroupError
 	CodeCancelSubscribeError
 	CodeGroupMemberError
+	CodeSelfRelationError
 )

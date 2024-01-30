@@ -24,6 +24,7 @@ var Cmd string
 var LogDir string
 var CliAddr string
 var chatFile string
+var httpHandler ClientHttpHandler
 
 func main() {
 	flag.StringVar(&LogDir, "logdir", "./logs/", "日志输出目录")
@@ -77,9 +78,17 @@ func StartServer() {
 		fmt.Println(err)
 		return
 	}
+
+	go func() {
+		t := time.NewTicker(time.Minute)
+		for range t.C {
+			httpHandler.QuerySelfRelation()
+		}
+	}()
+
 	msgPrintStatus(0, 0, "", "连接服务器")
 	GCli.SetProcess(HandlerNotify)
-	http.Handle("/api", &ClientHttpHandler{})
+	http.Handle("/api", &httpHandler)
 	err := http.ListenAndServe(CliAddr, nil)
 	panic(err)
 }

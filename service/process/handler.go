@@ -40,9 +40,33 @@ func init() {
 		for range t.C {
 			GUserSession.Range(func(key, value interface{}) bool {
 				info := value.(*UserSession)
-				if info.conn.Valid() == false {
-					GUserSession.Delete(key)
+				if info.conn.Valid() {
+					return true
 				}
+				GUserSession.Delete(key)
+				// 用户下线需要通知所有该用户订阅的人, 取消订阅
+				info.ownSubscribe.Range(func(key, value interface{}) bool {
+					peer := key.(int64)
+					val, ok := GUserSession.Load(peer)
+					if !ok {
+						return true
+					}
+					sess := val.(*UserSession)
+					sess.subscribe.Delete(peer)
+					nowUnix := time.Now().Unix()
+					_ = GAsyncIoPool.SendTask(uint64(peer), func() {
+						msgRq := &allpb.PublishSubscribeMsgRQ{
+							Peer:      proto.Int64(info.Own),
+							Name:      &info.Name,
+							TimeStamp: &nowUnix,
+							Op:        proto.Int32(1),
+						}
+						data, _ := proto.Marshal(msgRq)
+						pkg := GPackOp.Full(pb.PackPublishSubscribeMsgRQ, data, &msg.DefaultHeader{})
+						_ = sess.conn.SendMsg(pkg)
+					})
+					return true
+				})
 				return true
 			})
 
@@ -344,7 +368,26 @@ func HandleSubscribePersonalRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Messa
 			sessInfo.ownSubscribe.Delete(peer)
 			ctx.Debug("subscribe info delete", zap.Any("own", req.GetOwn()), zap.Any("peer", peer), zap.Any("syncMap", sess.subscribe))
 		}
-		res.Peers = append(res.Peers, peer)
+
+		_ = GAsyncIoPool.SendTask(uint64(peer), func() {
+			msgRq := &allpb.PublishSubscribeMsgRQ{
+				Peer:      proto.Int64(req.GetOwn()),
+				Name:      &sessInfo.Name,
+				TimeStamp: req.TimeStamp,
+				Op:        proto.Int32(req.GetOp()),
+			}
+			data, _ := proto.Marshal(msgRq)
+			pkg := GPackOp.Full(pb.PackPublishSubscribeMsgRQ, data, &msg.DefaultHeader{})
+			if err := sess.conn.SendMsg(pkg); err != nil {
+				ctx.Error(funcName+" publish subscribe personal failed", zap.Error(err), zap.Any("msgRq", msgRq))
+			}
+		})
+
+		res.Peers = append(res.Peers, &allpb.PeerInfo{
+			Peer:      proto.Int64(peer),
+			Name:      &sess.Name,
+			TimeStamp: req.TimeStamp,
+		})
 	}
 
 	return
@@ -534,4 +577,73 @@ func HandleGroupMembersRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (
 	})
 
 	return
+}
+
+func HandleSelfRelationRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err error) {
+	const funcName = "HandleSelfRelationRQ"
+	req := reqMsg.(*allpb.SelfRelationRQ)
+	res := rspMsg.(*allpb.SelfRelationRS)
+	res.Err = GenErr(pb.CodeOK, "查询自身关系信息成功")
+	var sessInfo *UserSession
+
+	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
+	defer func() {
+		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
+	}()
+
+	sessInfo = GetSelf(ctx)
+	if sessInfo == nil {
+		res.Err = GenErr(pb.CodeSelfRelationError, "用户不在线上,请先登陆")
+		ctx.Warn(funcName + " user is offline")
+		return
+	}
+	sessInfo.ownSubscribe.Range(func(key, value interface{}) bool {
+		peer := key.(int64)
+		t := value.(int64)
+		info, err := GetUserInfo(ctx, peer)
+		if err != nil {
+			return true
+		}
+		res.Subscribers = append(res.Subscribers, &allpb.PeerInfo{
+			Peer:      &peer,
+			Name:      info.Name,
+			TimeStamp: &t,
+		})
+		return true
+	})
+
+	sessInfo.subscribe.Range(func(key, value interface{}) bool {
+		peer := key.(int64)
+		t := value.(int64)
+		info, err := GetUserInfo(ctx, peer)
+		if err != nil {
+			return true
+		}
+		res.Followers = append(res.Followers, &allpb.PeerInfo{
+			Peer:      &peer,
+			Name:      info.Name,
+			TimeStamp: &t,
+		})
+		return true
+	})
+
+	sessInfo.ownJoinGroup.Range(func(key, value interface{}) bool {
+		group := key.(int64)
+		t := value.(int64)
+		val, ok := GGroupMap.Load(group)
+		if !ok {
+			return true
+		}
+		groupInfo := val.(*TempGroupInfo)
+		res.Groups = append(res.Groups, &allpb.GroupInfo{
+			Group:      &group,
+			Name:       &groupInfo.Name,
+			CreateTime: &groupInfo.CreateTime,
+			JoinTime:   &t,
+			Code:       &groupInfo.Code,
+		})
+		return true
+	})
+
+	return nil
 }
