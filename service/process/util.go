@@ -8,6 +8,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"go.uber.org/zap"
+	"math"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -62,9 +63,21 @@ func init() {
 func GenUID(logger clog.ICatLog) int64 {
 	genUidLock.Lock()
 	defer genUidLock.Unlock()
+	var idMin, idMax int64 = UserMin, UserMax
+	capNum := int(float64(idMax-idMin) * 0.75)
+	for len(genUidMap) > capNum {
+		// 当已使用的ID过多时,提升UID的位数
+		if idMax > math.MaxInt64/10 {
+			return -1
+		}
+		idMin *= 10
+		idMax *= 10
+		capNum += int(float64(idMax-idMin) * 0.75)
+	}
+
 	var curID int64
 	for {
-		id := rand.Intn(UserMax-UserMin+1) + UserMin
+		id := rand.Intn(int(idMax-idMin)+1) + int(idMin)
 		if _, ok := genUidMap[int64(id)]; !ok {
 			curID = int64(id)
 			genUidMap[curID] = struct{}{}
@@ -86,8 +99,19 @@ func GenGroup() int64 {
 	genGroupLock.Lock()
 	defer genGroupLock.Unlock()
 	var curID int64
+	var idMin, idMax int64 = GroupMax, GroupMin
+	capNum := int(float64(idMax-idMin) * 0.75)
+	for len(genGroupMap) > capNum {
+		// 当已使用的ID过多时,提升UID的位数
+		if idMax > math.MaxInt64/10 {
+			return -1
+		}
+		idMin *= 10
+		idMax *= 10
+		capNum += int(float64(idMax-idMin) * 0.75)
+	}
 	for {
-		id := rand.Intn(GroupMax-GroupMin+1) + GroupMin
+		id := rand.Intn(int(idMax-idMin+1)) + int(idMin)
 		if _, ok := genGroupMap[int64(id)]; !ok {
 			curID = int64(id)
 			genGroupMap[curID] = struct{}{}
