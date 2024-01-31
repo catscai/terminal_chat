@@ -260,7 +260,7 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			setResErr(1, "用户未登录,无法操作")
 			return
 		}
-		if len(peersStr) == 0 || len(opStr) == 0 {
+		if len(opStr) == 0 {
 			setResErr(2, "参数错误,无法操作")
 			return
 		}
@@ -276,14 +276,22 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 		}
 
 		op, e2 := strconv.ParseInt(opStr, 10, 64)
-		if e2 != nil || len(peers) == 0 {
+		if e2 != nil || (len(peers) == 0 && op >= 0 && op <= 1) || !(op >= 0 && op <= 3) {
 			setResErr(3, "参数格式错误,无法操作")
 			return
 		}
-		msgStr := "订阅对方:"
-		if op == 1 {
+		var msgStr string
+		switch op {
+		case 0:
+			msgStr = "订阅对方:"
+		case 1:
 			msgStr = "取消订阅对方:"
+		case 2:
+			msgStr = "订阅世界频道:"
+		case 3:
+			msgStr = "取消订阅世界频道:"
 		}
+
 		nowUnix := time.Now().Unix()
 		msgRq := &allpb.SubscribePersonRQ{
 			Own:       &c.Own,
@@ -522,6 +530,35 @@ func (c *ClientHttpHandler) ServeHTTP(writer http.ResponseWriter, req *http.Requ
 			setResHeader("result", string(data))
 		} else {
 			msgPrintStatus(1, c.Own, c.Name, "查询讨论组成员："+fmt.Sprintf("%s(%d)", groupInfo.Name, groupInfo.Group))
+		}
+	case pack.SendToWorld:
+		if !c.IsLogin {
+			setResErr(1, "用户未登录,无法操作")
+			return
+		}
+		content := req.Header.Get("content")
+		if len(content) == 0 {
+			setResErr(1, "参数错误,无法操作")
+			return
+		}
+
+		nowUnix := time.Now().Unix()
+		msgRq := &allpb.SendWorldMessageRQ{
+			Own:       &c.Own,
+			Content:   &content,
+			TimeStamp: &nowUnix,
+			Op:        proto.Int32(0),
+		}
+		msgRs := &allpb.SendWorldMessageRS{}
+		if err := NetSend(pb.PackSendWorldMsgRQ, pb.PackSendWorldMsgRS, msgRq, msgRs, GetSessionID()); err != nil {
+			setResErr(4, "网络发送失败")
+			return
+		}
+		setResErr(int(msgRs.GetErr().GetCode()), msgRs.GetErr().GetMsg())
+		if msgRs.GetErr().GetCode() == pb.CodeOK {
+			personal := formatPersonalToWorld(nowUnix)
+			text := colouration(c.ColorCode, personal)
+			msgPrintOwn(text, content)
 		}
 	}
 }

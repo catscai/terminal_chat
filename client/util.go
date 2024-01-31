@@ -42,6 +42,16 @@ func formatPersonalToPeer(id int64, name string, seconds int64) string {
 	return fmt.Sprintf("->%s(%d)-%s", name, id, t)
 }
 
+func formatPersonalToWorld(seconds int64) string {
+	t := time.Unix(seconds, 0).Format("15:04:05")
+	return fmt.Sprintf("->[世界频道]-%s", t)
+}
+
+func formatPersonalWorld(id int64, name string, seconds int64) string {
+	t := time.Unix(seconds, 0).Format("15:04:05")
+	return fmt.Sprintf("[世界频道]%s(%d)-%s", name, id, t)
+}
+
 func formatGroup(id, group int64, name, groupName string, seconds int64) string {
 	t := time.Unix(seconds, 0).Format("15:04:05")
 	return fmt.Sprintf("%s(%d)[%s-%d]-%s", name, id, groupName, group, t)

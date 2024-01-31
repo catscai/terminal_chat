@@ -13,4 +13,5 @@ const (
 	ReConn             = "reConn"
 	GetStatus          = "getStatus"
 	GroupMembers       = "GroupMembers"
+	SendToWorld        = "SendToWorld"
 )

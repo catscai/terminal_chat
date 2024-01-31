@@ -18,4 +18,5 @@ func RegisterHandler(dispatcher iface.IDispatcher) {
 	dispatcher.RegisterHandlerSimplePB(pb.PackJoinGroupRQ, pb.PackJoinGroupRS, &allpb.JoinGroupRQ{}, &allpb.JoinGroupRS{}, HandleJoinGroupRQ)
 	dispatcher.RegisterHandlerSimplePB(pb.PackGroupMemberRQ, pb.PackGroupMemberRS, &allpb.GroupMembersRQ{}, &allpb.GroupMembersRS{}, HandleGroupMembersRQ)
 	dispatcher.RegisterHandlerSimplePB(pb.PackSelfRelationRQ, pb.PackSelfRelationRS, &allpb.SelfRelationRQ{}, &allpb.SelfRelationRS{}, HandleSelfRelationRQ)
+	dispatcher.RegisterHandlerSimplePB(pb.PackSendWorldMsgRQ, pb.PackSendWorldMsgRS, &allpb.SendWorldMessageRQ{}, &allpb.SendWorldMessageRS{}, HandleSendWorldMsgRQ)
 }

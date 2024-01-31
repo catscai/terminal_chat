@@ -23,6 +23,9 @@ type LineParams struct {
 	Send            bool // -s
 	ReConn          bool // -reset
 	Status          bool // -status
+	SubscribeWorld  bool // -w
+	CancelWorld     bool // -nw
+	SendWorld       bool // -sw
 
 	Own     int64  // -u
 	Peers   string // -ps
@@ -59,13 +62,16 @@ func ParseFlag() {
 	flag.StringVar(&LP.Content, "t", "", "发送的消息内容")
 	flag.BoolVar(&LP.ReConn, "reset", false, "重新连接,需要重新登陆")
 	flag.BoolVar(&LP.Status, "status", false, "查看当前状态信息")
+	flag.BoolVar(&LP.SubscribeWorld, "w", false, "订阅世界频道")
+	flag.BoolVar(&LP.CancelWorld, "nw", false, "取消订阅世界频道")
+	flag.BoolVar(&LP.SendWorld, "sw", false, "发消息到世界频道,需要t选项指定内容")
 
 	flag.Parse()
 }
 
 func check() (bool, string) {
 	opts := make([]bool, 0, 10)
-	opts = append(opts, LP.Register, LP.Login, LP.CreateGroup, LP.JoinGroup, LP.Send, LP.CancelALl, LP.SubscribePerson, LP.Cancel, LP.ReConn, LP.Status)
+	opts = append(opts, LP.Register, LP.Login, LP.CreateGroup, LP.JoinGroup, LP.Send, LP.CancelALl, LP.SubscribePerson, LP.Cancel, LP.ReConn, LP.Status, LP.SubscribeWorld, LP.CancelWorld, LP.SendWorld)
 	optMap := make(map[bool]int)
 	for _, opt := range opts {
 		optMap[opt]++
@@ -113,6 +119,14 @@ func check() (bool, string) {
 		}
 		if LP.Peer > 0 && LP.Group > 0 {
 			return false, "发送消息时指定的peer,group不能同时指定"
+		}
+		if len(LP.Content) == 0 {
+			return false, "发送内容不能为空"
+		}
+	}
+	if LP.SendWorld {
+		if len(LP.Content) == 0 {
+			return false, "发送内容不能为空"
 		}
 	}
 
@@ -236,6 +250,18 @@ func deal() error {
 		} else if LP.Group > 0 {
 			err, header = SendCommand(pack.Join, 0, "", "", "", "", "", 0, 0, LP.Group, 1)
 		}
+	}
+
+	if LP.SubscribeWorld {
+		err, header = SendCommand(pack.SubscribePersonal, 0, "", "", "", "", "", 0, 0, 0, 2)
+	}
+
+	if LP.CancelWorld {
+		err, header = SendCommand(pack.SubscribePersonal, 0, "", "", "", "", "", 0, 0, 0, 3)
+	}
+
+	if LP.SendWorld {
+		err, header = SendCommand(pack.SendToWorld, 0, "", "", "", "", LP.Content, 0, 0, 0, -1)
 	}
 
 	if err != nil {

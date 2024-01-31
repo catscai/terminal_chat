@@ -100,12 +100,13 @@ message SubscribePersonRQ {
   optional int64  own = 1;
   repeated int64  peers = 2;
   optional int64  timeStamp = 3;
-  optional int32  op = 4; // 0-订阅 1-取消
+  optional int32  op = 4; // 0-订阅 1-取消 2-订阅世界消息 3-取消订阅世界消息
 }
 
 message SubscribePersonRS {
-  optional ErrInfo err = 1;
-  repeated PeerInfo  peers = 2;
+  optional ErrInfo    err = 1;
+  repeated PeerInfo   peers = 2;
+  optional int32      op = 3;
 }
 
 message SubscribeTempGroupRQ {
@@ -147,6 +148,17 @@ message SelfRelationRS {
   repeated GroupInfo  groups = 4;
 }
 
+message SendWorldMessageRQ {
+  optional int64      own = 1;
+  optional string     content = 2;
+  optional int64      timeStamp = 3;
+  optional int32      op = 4;
+}
+
+message SendWorldMessageRS {
+  optional ErrInfo    err = 1;
+}
+
 // server -> client
 
 message PublishPersonalMsgRQ {
@@ -154,6 +166,7 @@ message PublishPersonalMsgRQ {
   optional string name = 2;
   optional string content = 3;
   optional int64  timeStamp = 4;
+  optional int32  op = 5;   // 0-普通私人消息 1-世界消息
 }
 
 message PublishPersonalMsgRS {
@@ -177,10 +190,23 @@ message PublishSubscribeMsgRQ {
   optional int64  peer = 1;
   optional string name = 2;
   optional int64  timeStamp = 3;
-  optional int32  op = 4;
+  optional int32  op = 4; // // 0-订阅 1-取消 2-订阅世界消息 3-取消订阅世界消息
 }
 
 message PublishSubscribeMsgRS {
+}
+
+message PublishGroupMemberChangeRQ {
+  optional int32  op = 1; // 0-加入组 1-退出组
+  optional int64  peer = 2;
+  optional string name = 3;
+  optional int64  group = 4;
+  optional string groupName = 5;
+  optional int64  timeStamp = 6;
+}
+
+message PublishGroupMemberChangeRS {
+
 }
 
 message CancelSubscribeAllRQ {

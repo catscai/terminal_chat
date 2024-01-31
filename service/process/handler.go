@@ -1,6 +1,7 @@
 package process
 
 import (
+	"github.com/catscai/ccat/clog"
 	"github.com/catscai/ccat/iface"
 	"github.com/catscai/ccat/impl/msg"
 	"github.com/catscai/terminal_chat/pb"
@@ -18,8 +19,10 @@ type UserSession struct {
 	Name      string
 	subscribe sync.Map // int64 -> int64 peer -> timeStamp 被peer订阅
 
-	ownSubscribe sync.Map // int64 -> int64 peer -> timeStamp own 订阅的人
-	ownJoinGroup sync.Map // int64 -> int64 group -> timeStamp own 订阅的组
+	ownSubscribe         sync.Map // int64 -> int64 peer -> timeStamp own 订阅的人
+	ownJoinGroup         sync.Map // int64 -> int64 group -> timeStamp own 订阅的组
+	LastSendWorldMsgTime int64    // 上一次发送世界消息时间戳 用作发送CD
+	IsSubscribeWorld     bool     // 是否订阅了世界消息
 }
 
 type TempGroupInfo struct {
@@ -38,12 +41,15 @@ func init() {
 	go func() {
 		t := time.NewTicker(time.Second * 30)
 		for range t.C {
+			var users []int64
+			var groups []int64
 			GUserSession.Range(func(key, value interface{}) bool {
 				info := value.(*UserSession)
 				if info.conn.Valid() {
 					return true
 				}
 				GUserSession.Delete(key)
+				users = append(users, info.Own)
 				// 用户下线需要通知所有该用户订阅的人, 取消订阅
 				info.ownSubscribe.Range(func(key, value interface{}) bool {
 					peer := key.(int64)
@@ -67,6 +73,19 @@ func init() {
 					})
 					return true
 				})
+
+				// 通知自己所加入组的成员退出讨论组消息
+				info.ownJoinGroup.Range(func(key, value interface{}) bool {
+					group := key.(int64)
+					val, ok := GGroupMap.Load(group)
+					if !ok {
+						return true
+					}
+					groupInfo := val.(*TempGroupInfo)
+					groupInfo.Members.Delete(info.Own)
+					AsyncSendGroupMemberChange(groupInfo, 1, info.Own, info.Name, time.Now().Unix())
+					return true
+				})
 				return true
 			})
 
@@ -88,10 +107,13 @@ func init() {
 					genGroupLock.Lock()
 					delete(genGroupMap, key.(int64))
 					genGroupLock.Unlock()
+					groups = append(groups, info.Group)
 				}
 
 				return true
 			})
+
+			clog.AppLogger().Debug("timer monitor clean", zap.Any("users", users), zap.Any("groups", groups))
 		}
 	}()
 }
@@ -188,10 +210,11 @@ func HandleLoginRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err err
 
 	res.Name = userInfo.Name
 	sessInfo := &UserSession{
-		Own:       req.GetOwn(),
-		Name:      userInfo.GetName(),
-		LoginTime: time.Now().Unix(),
-		conn:      ctx.IConn,
+		Own:              req.GetOwn(),
+		Name:             userInfo.GetName(),
+		LoginTime:        time.Now().Unix(),
+		conn:             ctx.IConn,
+		IsSubscribeWorld: true, // 登陆成功后默认订阅世界消息
 	}
 	GUserSession.Store(req.GetOwn(), sessInfo)
 
@@ -290,39 +313,10 @@ func HandleSendToGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (e
 	if _, ok := groupInfo.Members.Load(req.GetOwn()); !ok {
 		res.Err = GenErr(pb.CodeSendError, "用户没有加入该讨论组")
 		ctx.Warn(funcName+" not join the group", zap.Any("group", req.GetGroup()))
-
 		return
 	}
-	// 异步发送
-
-	_ = GAsyncIoPool.SendTask(uint64(req.GetGroup()), func() {
-		msgRq := &allpb.PublishGroupMsgRQ{
-			Group:     req.Group,
-			Name:      &groupInfo.Name,
-			Content:   req.Content,
-			TimeStamp: req.TimeStamp,
-			Peer:      &sessInfo.Own,
-			PeerName:  &sessInfo.Name,
-		}
-		data, _ := proto.Marshal(msgRq)
-		groupInfo.Members.Range(func(key, value interface{}) bool {
-			uid := key.(int64)
-			if uid == req.GetOwn() {
-				// 发送给组的消息 过滤掉自己
-				return true
-			}
-			sessValue, ok := GUserSession.Load(uid)
-			if !ok || sessValue == nil {
-				return true
-			}
-			sess := sessValue.(*UserSession)
-			pkg := GPackOp.Full(pb.PackPublishGroupMsgRQ, data, &msg.DefaultHeader{})
-			if err := sess.conn.SendMsg(pkg); err != nil {
-				ctx.Error(funcName+" SendMsg failed", zap.Any("peer", uid), zap.Any("group", req.GetGroup()), zap.Error(err))
-			}
-			return true
-		})
-	})
+	// 异步发送广播给组成员
+	AsyncSendToGroup(ctx, groupInfo, req.GetOwn(), sessInfo.Name, req.GetContent(), req.GetTimeStamp())
 
 	res.Name = &groupInfo.Name
 	return
@@ -332,7 +326,18 @@ func HandleSubscribePersonalRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Messa
 	const funcName = "HandleSubscribePersonalRQ"
 	req := reqMsg.(*allpb.SubscribePersonRQ)
 	res := rspMsg.(*allpb.SubscribePersonRS)
-	res.Err = GenErr(pb.CodeOK, "订阅对方消息成功")
+	var desc string
+	switch req.GetOwn() {
+	case 0:
+		desc = "订阅对方消息成功"
+	case 1:
+		desc = "取消订阅对方消息成功"
+	case 2:
+		desc = "订阅世界消息成功"
+	case 3:
+		desc = "取消订阅世界消息成功"
+	}
+	res.Err = GenErr(pb.CodeOK, desc)
 
 	var sessInfo *UserSession
 
@@ -342,6 +347,12 @@ func HandleSubscribePersonalRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Messa
 		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
 	}()
 
+	if !(req.GetOp() >= 0 && req.GetOp() <= 3) {
+		res.Err = GenErr(pb.CodeSendError, "参数错误")
+		ctx.Warn(funcName + " params is invalid")
+		return
+	}
+
 	sessInfo = GetSelf(ctx)
 	if sessInfo == nil {
 		res.Err = GenErr(pb.CodeSendError, "用户不在线上,请先登陆")
@@ -349,45 +360,53 @@ func HandleSubscribePersonalRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Messa
 		return
 	}
 	nowUnix := time.Now().Unix()
-	for _, peer := range req.GetPeers() {
-		value, ok := GUserSession.Load(peer)
-		if !ok || value == nil {
-			continue
-		}
-		if req.GetOwn() == peer {
-			// 不能自己订阅自己
-			continue
-		}
-		sess := value.(*UserSession)
-		if req.GetOp() == 0 {
-			sess.subscribe.Store(req.GetOwn(), nowUnix)
-			sessInfo.ownSubscribe.Store(peer, nowUnix)
-			ctx.Debug("subscribe info", zap.Any("own", req.GetOwn()), zap.Any("peer", peer), zap.Any("syncMap", sess.subscribe))
-		} else {
-			sess.subscribe.Delete(req.GetOwn())
-			sessInfo.ownSubscribe.Delete(peer)
-			ctx.Debug("subscribe info delete", zap.Any("own", req.GetOwn()), zap.Any("peer", peer), zap.Any("syncMap", sess.subscribe))
-		}
+	if req.GetOp() < 2 {
+		for _, peer := range req.GetPeers() {
+			value, ok := GUserSession.Load(peer)
+			if !ok || value == nil {
+				continue
+			}
+			if req.GetOwn() == peer {
+				// 不能自己订阅自己
+				continue
+			}
+			sess := value.(*UserSession)
+			if req.GetOp() == 0 {
+				sess.subscribe.Store(req.GetOwn(), nowUnix)
+				sessInfo.ownSubscribe.Store(peer, nowUnix)
+				ctx.Debug("subscribe info", zap.Any("own", req.GetOwn()), zap.Any("peer", peer), zap.Any("syncMap", sess.subscribe))
+			} else {
+				sess.subscribe.Delete(req.GetOwn())
+				sessInfo.ownSubscribe.Delete(peer)
+				ctx.Debug("subscribe info delete", zap.Any("own", req.GetOwn()), zap.Any("peer", peer), zap.Any("syncMap", sess.subscribe))
+			}
 
-		_ = GAsyncIoPool.SendTask(uint64(peer), func() {
-			msgRq := &allpb.PublishSubscribeMsgRQ{
-				Peer:      proto.Int64(req.GetOwn()),
-				Name:      &sessInfo.Name,
+			_ = GAsyncIoPool.SendTask(uint64(peer), func() {
+				msgRq := &allpb.PublishSubscribeMsgRQ{
+					Peer:      proto.Int64(req.GetOwn()),
+					Name:      &sessInfo.Name,
+					TimeStamp: req.TimeStamp,
+					Op:        proto.Int32(req.GetOp()),
+				}
+				data, _ := proto.Marshal(msgRq)
+				pkg := GPackOp.Full(pb.PackPublishSubscribeMsgRQ, data, &msg.DefaultHeader{})
+				if err := sess.conn.SendMsg(pkg); err != nil {
+					ctx.Error(funcName+" publish subscribe personal failed", zap.Error(err), zap.Any("msgRq", msgRq))
+				}
+			})
+
+			res.Peers = append(res.Peers, &allpb.PeerInfo{
+				Peer:      proto.Int64(peer),
+				Name:      &sess.Name,
 				TimeStamp: req.TimeStamp,
-				Op:        proto.Int32(req.GetOp()),
-			}
-			data, _ := proto.Marshal(msgRq)
-			pkg := GPackOp.Full(pb.PackPublishSubscribeMsgRQ, data, &msg.DefaultHeader{})
-			if err := sess.conn.SendMsg(pkg); err != nil {
-				ctx.Error(funcName+" publish subscribe personal failed", zap.Error(err), zap.Any("msgRq", msgRq))
-			}
-		})
-
-		res.Peers = append(res.Peers, &allpb.PeerInfo{
-			Peer:      proto.Int64(peer),
-			Name:      &sess.Name,
-			TimeStamp: req.TimeStamp,
-		})
+			})
+		}
+	} else {
+		if req.GetOp() == 2 {
+			sessInfo.IsSubscribeWorld = true
+		} else {
+			sessInfo.IsSubscribeWorld = false
+		}
 	}
 
 	return
@@ -514,16 +533,29 @@ func HandleJoinGroupRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err
 			ctx.Warn(funcName+" the code not match", zap.Any("groupInfo.code", groupInfo.Code), zap.Any("code", req.GetCode()))
 			return
 		}
+		if _, ok := groupInfo.Members.Load(req.GetOwn()); ok {
+			res.Err = GenErr(pb.CodeJoinError, "该用户已在讨论组中")
+			ctx.Warn(funcName+" the user already exists at the group", zap.Any("group", req.GetGroup()), zap.Any("own", req.GetOwn()))
+			return
+		}
 		nowUnix := time.Now().Unix()
 		groupInfo.Members.Store(req.GetOwn(), nowUnix)
 		res.Err = GenErr(pb.CodeOK, "加入讨论组成功")
 		sessInfo.ownJoinGroup.Store(req.GetGroup(), nowUnix)
 	} else {
+		if _, ok := groupInfo.Members.Load(req.GetOwn()); !ok {
+			res.Err = GenErr(pb.CodeJoinError, "该用户不在讨论组中")
+			ctx.Warn(funcName+" the user not exists at the group", zap.Any("group", req.GetGroup()), zap.Any("own", req.GetOwn()))
+			return
+		}
 		groupInfo.Members.Delete(req.GetOwn())
 		res.Err = GenErr(pb.CodeOK, "退出讨论组成功")
 		sessInfo.ownJoinGroup.Delete(req.GetGroup())
 	}
 	res.GroupName = &groupInfo.Name
+
+	// 异步向讨论组中其他成员推送该消息
+	AsyncSendGroupMemberChange(groupInfo, req.GetOp(), req.GetOwn(), sessInfo.Name, req.GetTimeStamp())
 	return
 }
 
@@ -642,6 +674,64 @@ func HandleSelfRelationRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (
 			JoinTime:   &t,
 			Code:       &groupInfo.Code,
 		})
+		return true
+	})
+
+	return nil
+}
+
+func HandleSendWorldMsgRQ(ctx *iface.CatContext, reqMsg, rspMsg proto.Message) (err error) {
+	const funcName = "HandleSendWorldMsgRQ"
+	req := reqMsg.(*allpb.SendWorldMessageRQ)
+	res := rspMsg.(*allpb.SendWorldMessageRS)
+	res.Err = GenErr(pb.CodeOK, "发送世界消息成功")
+	var sessInfo *UserSession
+
+	ctx.Debug(funcName+" begin", zap.Any("req", req), zap.Any("self", sessInfo))
+	defer func() {
+		ctx.Debug(funcName+" end", zap.Any("res", res), zap.Any("self", sessInfo))
+	}()
+
+	sessInfo = GetSelf(ctx)
+	if sessInfo == nil {
+		res.Err = GenErr(pb.CodeSendWorldMsgError, "用户不在线上,请先登陆")
+		ctx.Warn(funcName + " user is offline")
+		return
+	}
+	nowUnix := time.Now().Unix()
+	if nowUnix-sessInfo.LastSendWorldMsgTime < 15 {
+		res.Err = GenErr(pb.CodeSendWorldMsgError, "发送太频繁,处于发送CD中")
+		ctx.Warn(funcName + " send cd be limited")
+		return
+	}
+	sessInfo.LastSendWorldMsgTime = nowUnix
+
+	GUserSession.Range(func(key, value interface{}) bool {
+		sess := value.(*UserSession)
+		if sess.conn.Valid() == false {
+			return true
+		}
+		if sess.Own == req.GetOwn() {
+			return true
+		}
+
+		if !sess.IsSubscribeWorld {
+			return true
+		}
+
+		_ = GAsyncIoPool.SendTask(uint64(sess.Own), func() {
+			msgRq := &allpb.PublishPersonalMsgRQ{
+				Peer:      req.Own,
+				Name:      &sessInfo.Name,
+				Content:   req.Content,
+				TimeStamp: req.TimeStamp,
+				Op:        proto.Int32(1), // 世界消息
+			}
+			data, _ := proto.Marshal(msgRq)
+			pkg := GPackOp.Full(pb.PackPublishPersonalMsgRQ, data, &msg.DefaultHeader{})
+			_ = sess.conn.SendMsg(pkg)
+		})
+
 		return true
 	})
 
